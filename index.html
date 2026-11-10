@@ -1,0 +1,1484 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SataMart Procedure Quest</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+
+<style>
+/* Layout: a fixed 1280x720 game stage, scaled as one piece to fit any screen (letterboxed). */
+:root{
+  --red:#D3263A; --red-d:#A81B2C; --navy:#1D2A5B; --navy-2:#2E3F7F;
+  --cream:#FBF3E4; --paper:#FFFDF8; --ink:#1A2140; --muted:#5B6280;
+  --teal:#1E9C8E; --teal-l:#DDF4F0; --gold:#F2B21B; --warn:#B4461A; --warn-l:#FCE9DF;
+  --line:#E6DCCB; --shadow:0 10px 30px rgba(29,42,91,.18);
+  --f-display:"Fredoka","Trebuchet MS","Segoe UI",system-ui,sans-serif;
+  --f-body:"Nunito","Segoe UI",system-ui,-apple-system,sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%;}
+body{margin:0;background:#141A33;color:var(--ink);font-family:var(--f-body);overflow:hidden;}
+#app{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));padding-block:12px;
+  background:radial-gradient(ellipse at center,#24305f 0%,#141A33 70%);}
+:fullscreen #app,#app.fs{padding:0;}
+#stageWrap{position:relative;flex:none;}
+#stage{position:absolute;left:0;top:0;width:1280px;height:720px;transform-origin:0 0;overflow:hidden;background:var(--cream);
+  border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.45);font-size:18px;line-height:1.45;}
+.fsmode #stage{border-radius:0;}
+#stage *{box-sizing:border-box;}
+#stage img{max-width:100%;}
+.t svg{width:22px;height:22px;}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+h1,h2,h3,h4{font-family:var(--f-display);margin:0;line-height:1.15;text-wrap:balance;color:var(--navy);}
+p{margin:0;}
+.scene{position:absolute;inset:0;}
+.bg{position:absolute;inset:0;background-size:cover;background-position:center;}
+.bg.soft::after{content:"";position:absolute;inset:0;background:rgba(251,243,228,.55);}
+.bg.dim::after{content:"";position:absolute;inset:0;background:rgba(20,26,51,.25);}
+
+/* HUD */
+.hud{position:absolute;left:0;right:0;top:0;height:60px;display:flex;align-items:center;gap:12px;padding:0 14px;z-index:30;
+  background:linear-gradient(180deg,rgba(29,42,91,.96),rgba(29,42,91,.9));color:#fff;}
+.hud.clear{background:transparent;}
+.brand{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-weight:700;font-size:22px;white-space:nowrap;}
+.brand .dot{width:30px;height:30px;border-radius:8px;background:var(--red);display:grid;place-items:center;font-size:17px;border:2px solid #fff;}
+.loc{max-width:190px;overflow:hidden;text-overflow:ellipsis;font-size:13px;opacity:.85;font-weight:700;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}
+.stats{display:flex;align-items:center;gap:6px;margin-left:auto;}
+.stat{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border-radius:999px;padding:4px 10px;font-weight:800;font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.xpbar{width:80px;height:10px;border-radius:6px;background:rgba(255,255,255,.2);overflow:hidden;}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#ffd866);border-radius:6px;transition:width .6s;}
+.tools{display:flex;gap:5px;margin-left:6px;flex:none;}
+.ib{width:38px;height:38px;border-radius:12px;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.1);color:#fff;display:grid;place-items:center;cursor:pointer;transition:transform .12s,background .12s;padding:0;position:relative;}
+.ib:hover{background:rgba(255,255,255,.25);transform:translateY(-1px);}
+.ib svg{width:22px;height:22px;}
+.ib.off::after{content:"";position:absolute;width:26px;height:3px;background:var(--red);transform:rotate(-45deg);border-radius:2px;box-shadow:0 0 0 1.5px #fff;}
+.ib.assist{width:auto;padding:0 10px;gap:6px;display:flex;font-weight:800;font-size:14px;background:var(--gold);color:var(--navy);border-color:#fff;}
+.ib[data-tip]:hover::before{content:attr(data-tip);position:absolute;top:46px;right:0;background:var(--ink);color:#fff;font-size:13px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:5;}
+.saved{position:absolute;left:14px;top:66px;z-index:30;font-size:13px;font-weight:700;background:rgba(255,253,248,.92);border-radius:999px;padding:3px 10px;color:var(--teal);border:1px solid var(--line);}
+.saved.fail{color:var(--warn);}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:14px;padding:12px 22px;font-weight:800;cursor:pointer;
+  font-size:18px;transition:transform .12s, box-shadow .12s, filter .12s;box-shadow:0 4px 0 rgba(0,0,0,.18);text-decoration:none;}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.05);}
+.btn:active{transform:translateY(1px);box-shadow:0 1px 0 rgba(0,0,0,.18);}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none;filter:none;}
+.btn.red{background:var(--red);color:#fff;box-shadow:0 4px 0 var(--red-d);}
+.btn.navy{background:var(--navy);color:#fff;box-shadow:0 4px 0 #0f1838;}
+.btn.teal{background:var(--teal);color:#fff;box-shadow:0 4px 0 #136f65;}
+.btn.ghost{background:#fff;color:var(--navy);border:2px solid var(--navy);box-shadow:0 3px 0 rgba(29,42,91,.25);}
+.btn.sm{padding:7px 14px;font-size:15px;border-radius:10px;}
+.btn.lg{padding:16px 34px;font-size:22px;border-radius:18px;font-family:var(--f-display);font-weight:600;}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.col{display:flex;flex-direction:column;gap:12px;}
+.spacer{flex:1;}
+
+/* Cover */
+.cover-title{position:absolute;left:48px;top:92px;width:560px;}
+.cover-title .eyebrow{display:inline-block;background:var(--navy);color:#fff;font-weight:800;font-size:15px;letter-spacing:.08em;text-transform:uppercase;padding:6px 14px;border-radius:999px;}
+.cover-title h1{font-size:48px;margin-top:14px;color:var(--navy);text-shadow:0 3px 0 #fff;}
+.cover-title h1 em{font-style:normal;color:var(--red);}
+.cover-title p{margin-top:12px;font-size:18px;font-weight:700;color:var(--ink);max-width:520px;background:rgba(255,253,248,.85);padding:8px 14px;border-radius:12px;}
+.cover-btns{position:absolute;left:48px;top:470px;display:grid;grid-template-columns:auto auto;gap:14px;}
+.cover-sata{position:absolute;right:300px;bottom:-30px;height:520px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.25));}
+
+/* Mentor */
+.mentor{position:absolute;left:8px;bottom:0;width:230px;z-index:5;pointer-events:none;}
+.mentor img{width:230px;display:block;filter:drop-shadow(0 8px 12px rgba(0,0,0,.2));}
+.bubble{position:absolute;background:#fff;border:3px solid var(--navy);border-radius:18px;padding:12px 16px;font-weight:700;font-size:17px;box-shadow:var(--shadow);z-index:6;}
+.bubble::after{content:"";position:absolute;left:30px;bottom:-14px;border:12px solid transparent;border-top-color:var(--navy);border-bottom:0;}
+.bubble .who{display:block;font-family:var(--f-display);color:var(--red);font-size:15px;}
+.bubble .say{pointer-events:auto;}
+
+/* Panel */
+.panel{position:absolute;background:var(--paper);border-radius:22px;box-shadow:var(--shadow);border:2px solid var(--line);display:flex;flex-direction:column;overflow:hidden;}
+.panel-h{display:flex;align-items:center;gap:12px;padding:14px 22px 10px;border-bottom:2px dashed var(--line);}
+.panel-h h2{font-size:30px;}
+.panel-h .tag{font-family:var(--f-display);background:var(--red);color:#fff;border-radius:10px;padding:2px 10px;font-size:18px;}
+.panel-b{flex:1;overflow:auto;padding:16px 22px 20px;min-height:0;}
+.panel-f{display:flex;gap:10px;align-items:center;padding:10px 22px;border-top:2px dashed var(--line);background:#fffaf0;}
+.main-panel{left:250px;right:22px;top:74px;bottom:18px;}
+.tabs{display:flex;gap:6px;padding:10px 22px 0;flex-wrap:wrap;}
+.tab{border:2px solid var(--line);background:#fff;border-radius:12px 12px 0 0;padding:7px 14px;font-weight:800;cursor:pointer;font-size:15px;color:var(--muted);display:flex;gap:6px;align-items:center;}
+.tab.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+.tab .st{font-size:13px;}
+.card{background:#fff;border:2px solid var(--line);border-radius:16px;padding:14px 16px;}
+.card.navy{background:var(--navy);color:#fff;border-color:var(--navy);}
+.card.navy h3{color:#fff;}
+.card h3{font-size:21px;margin-bottom:6px;}
+.lead{font-size:19px;font-weight:700;}
+.small{font-size:15px;color:var(--muted);}
+.kicker{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--red);}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.grid2>*,.grid3>*{min-width:0;}
+ol.steps{margin:6px 0 0;padding-left:24px;}
+ol.steps li{margin:3px 0;}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:800;}
+.pill.lock{background:#E8E5EE;color:#555;}
+.pill.ready{background:var(--gold);color:var(--navy);}
+.pill.prog{background:#D7E1FF;color:var(--navy);}
+.pill.done{background:var(--teal);color:#fff;}
+.listen{display:inline-flex;align-items:center;gap:4px;border:2px solid var(--navy);background:#fff;color:var(--navy);border-radius:999px;padding:2px 10px;font-weight:800;font-size:14px;cursor:pointer;vertical-align:middle;}
+.listen:hover{background:var(--navy);color:#fff;}
+.listen svg{width:16px;height:16px;}
+textarea,input[type=text]{width:100%;border:2px solid var(--line);border-radius:12px;padding:9px 12px;background:#fff;font-size:17px;}
+textarea:focus,input[type=text]:focus{border-color:var(--navy);outline:none;}
+textarea{resize:none;line-height:1.45;}
+input.gap{width:150px;display:inline-block;padding:3px 8px;border-width:0 0 3px;border-radius:6px 6px 0 0;background:#FFF6DD;font-weight:800;text-align:center;}
+.err{color:var(--warn);font-weight:800;font-size:14px;}
+
+/* Options & feedback */
+.opts{display:flex;flex-direction:column;gap:8px;}
+.opts.h{flex-direction:row;flex-wrap:wrap;}
+.opt{text-align:left;border:2px solid var(--line);background:#fff;border-radius:14px;padding:10px 14px;cursor:pointer;font-weight:700;display:flex;gap:10px;align-items:center;transition:border-color .12s, transform .12s;}
+.opt:hover{border-color:var(--navy);transform:translateX(2px);}
+.opt .mk{width:28px;height:28px;flex:none;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-weight:900;font-size:15px;color:var(--muted);}
+.opt.ok{border-color:var(--teal);background:var(--teal-l);}
+.opt.ok .mk{background:var(--teal);border-color:var(--teal);color:#fff;}
+.opt.no{border-color:var(--warn);background:var(--warn-l);}
+.opt.no .mk{background:var(--warn);border-color:var(--warn);color:#fff;}
+.opt.sel{border-color:var(--navy);background:#EEF2FF;}
+.opt.sel .mk{background:var(--navy);color:#fff;border-color:var(--navy);}
+.opt.img{flex-direction:column;padding:8px;}
+.opt.img img{width:100%;border-radius:10px;display:block;}
+.fb{border-radius:14px;padding:10px 14px;font-weight:700;margin-top:10px;display:flex;gap:10px;align-items:flex-start;}
+.fb .ic{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;}
+.fb.ok{background:var(--teal-l);border:2px solid var(--teal);}
+.fb.ok .ic{background:var(--teal);}
+.fb.no{background:var(--warn-l);border:2px solid var(--warn);}
+.fb.no .ic{background:var(--warn);}
+.fb.info{background:#EEF2FF;border:2px solid var(--navy-2);}
+.fb.info .ic{background:var(--navy-2);}
+.fb b{font-family:var(--f-display);font-weight:600;}
+
+/* Chips & slots */
+.bank{display:flex;flex-wrap:wrap;gap:8px;padding:10px;border:2px dashed var(--line);border-radius:14px;background:#FFFBF2;min-height:56px;}
+.chip{border:2px solid var(--navy);background:#fff;border-radius:12px;padding:7px 14px;font-weight:800;cursor:grab;user-select:none;color:var(--navy);transition:transform .1s;}
+.chip:hover{transform:translateY(-2px);}
+.chip.sel{background:var(--navy);color:#fff;box-shadow:0 0 0 4px rgba(242,178,27,.6);}
+.chip.used{opacity:.3;pointer-events:none;}
+.slotrow{display:flex;align-items:center;gap:10px;margin:6px 0;}
+.slot{min-width:190px;min-height:44px;border:2px dashed var(--navy-2);border-radius:12px;background:#F4F6FF;display:flex;align-items:center;justify-content:center;gap:6px;padding:4px 10px;font-weight:800;cursor:pointer;color:var(--navy);}
+.slot.empty{color:#97A0C3;font-weight:700;font-size:15px;}
+.slot.hot{background:#FFF3C9;border-color:var(--gold);}
+.slot.ok{border-style:solid;border-color:var(--teal);background:var(--teal-l);}
+.slot.no{border-style:solid;border-color:var(--warn);background:var(--warn-l);}
+.slot .g{font-weight:900;}
+.num{width:34px;height:34px;flex:none;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-family:var(--f-display);font-weight:600;}
+
+/* Map */
+.spot{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;border:0;background:none;padding:0;z-index:4;}
+.spot .badge{font-family:var(--f-display);font-weight:700;font-size:20px;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:var(--red);color:#fff;border:4px solid #fff;box-shadow:0 6px 14px rgba(0,0,0,.3);transition:transform .15s;}
+.spot:hover .badge{transform:scale(1.1);}
+.spot .lbl{background:rgba(255,253,248,.96);border:2px solid var(--navy);border-radius:12px;padding:3px 10px;font-weight:800;font-size:15px;color:var(--navy);white-space:nowrap;text-align:center;line-height:1.2;}
+.spot.locked .badge{background:#8A8FA3;}
+.spot.done .badge{background:var(--teal);}
+.spot.ready .badge{animation:pulse 1.6s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(242,178,27,.9),0 6px 14px rgba(0,0,0,.3)}50%{box-shadow:0 0 0 14px rgba(242,178,27,0),0 6px 14px rgba(0,0,0,.3)}}
+.mapbar{position:absolute;left:16px;right:16px;bottom:14px;z-index:5;display:flex;align-items:center;gap:14px;background:rgba(255,253,248,.96);border:2px solid var(--navy);border-radius:16px;padding:10px 16px;font-size:15px;}
+
+/* Modal */
+.mback{position:absolute;inset:0;background:rgba(20,26,51,.55);z-index:50;display:grid;place-items:center;animation:fade .18s;}
+.modal{width:900px;max-height:640px;background:var(--paper);border-radius:22px;box-shadow:0 30px 70px rgba(0,0,0,.4);display:flex;flex-direction:column;overflow:hidden;border:3px solid var(--navy);animation:pop .22s;}
+.modal.narrow{width:620px;}
+.modal.wide{width:1080px;}
+.modal-h{display:flex;align-items:center;gap:12px;padding:14px 20px;background:var(--navy);color:#fff;}
+.modal-h h2{color:#fff;font-size:26px;}
+.modal-h .x{margin-left:auto;}
+.modal-b{padding:16px 22px;overflow:auto;min-height:0;}
+.modal-f{padding:12px 22px;border-top:2px dashed var(--line);display:flex;gap:10px;justify-content:flex-end;}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.toast{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:12px;font-weight:700;z-index:60;box-shadow:var(--shadow);animation:pop .2s;max-width:760px;text-align:center;}
+.xpfloat{position:absolute;z-index:70;font-family:var(--f-display);font-size:44px;font-weight:700;color:var(--gold);text-shadow:0 3px 0 var(--navy),0 0 20px rgba(0,0,0,.3);left:50%;top:45%;transform:translate(-50%,-50%);animation:rise 1.6s forwards;pointer-events:none;}
+@keyframes rise{0%{opacity:0;transform:translate(-50%,-20%) scale(.6)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-130%) scale(1)}}
+.stampAnim{animation:stamp .5s cubic-bezier(.2,1.6,.4,1);}
+@keyframes stamp{0%{transform:scale(2.2) rotate(-20deg);opacity:0}100%{transform:scale(1) rotate(-8deg);opacity:1}}
+.confetti{position:absolute;inset:0;pointer-events:none;z-index:65;}
+
+/* Vocab table */
+table.t{width:100%;border-collapse:collapse;font-size:16px;}
+table.t th{background:var(--navy);color:#fff;text-align:left;padding:7px 10px;font-weight:800;position:sticky;top:0;}
+table.t td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
+table.t tr:nth-child(even) td{background:#FFF8EC;}
+.word{font-weight:800;color:var(--navy);}
+.idn{color:var(--red-d);font-weight:700;}
+.hl{background:#FFE9A8;border-radius:5px;padding:0 4px;cursor:pointer;border-bottom:3px solid var(--gold);font-weight:800;}
+.hl.seen{background:#D8F1EC;border-bottom-color:var(--teal);}
+.hl.goal{background:#FFD9DD;border-bottom-color:var(--red);}
+.preview-phone{width:300px;border:10px solid var(--ink);border-radius:30px;background:#fff;overflow:hidden;box-shadow:var(--shadow);flex:none;}
+.preview-phone .top{background:var(--red);color:#fff;font-family:var(--f-display);text-align:center;padding:6px;font-size:16px;}
+.preview-phone .ph{height:200px;background:#EEE;display:grid;place-items:center;color:#999;font-size:14px;overflow:hidden;}
+.preview-phone .ph img{width:100%;height:100%;object-fit:cover;}
+.preview-phone .cap{padding:10px 12px;font-size:15px;min-height:110px;}
+.preview-phone .cap .nm{font-family:var(--f-display);font-size:20px;color:var(--navy);}
+.miss{color:#B0B5C9;font-style:italic;}
+.icon-step{width:92px;height:92px;flex:none;}
+.reader{font-size:19px;line-height:1.6;background:#fff;border:2px solid var(--line);border-radius:16px;padding:16px 20px;white-space:pre-wrap;}
+.timer{font-family:var(--f-display);font-size:24px;background:var(--red);color:#fff;border-radius:12px;padding:2px 12px;font-variant-numeric:tabular-nums;}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);}
+.tog{width:58px;height:32px;border-radius:999px;background:#C8CCDA;border:0;position:relative;cursor:pointer;flex:none;}
+.tog::after{content:"";position:absolute;left:4px;top:4px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .15s;}
+.tog.on{background:var(--teal);}
+.tog.on::after{left:30px;}
+input[type=range]{accent-color:var(--navy);width:220px;}
+.statusline{font-weight:800;color:var(--teal);}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important;}}
+</style>
+</head><body>
+<div id="app">
+  <div id="stageWrap">
+    <div id="stage" role="application" aria-label="SataMart Procedure Quest game">
+      <div id="scene" class="scene"></div>
+      <div id="hud"></div>
+      <div id="savedTag" class="saved" hidden></div>
+      <div id="layer"></div>
+    </div>
+  </div>
+</div>
+<script>
+/* ================= DATA ================= */
+const IMG = n => 'assets/images/' + n;
+const MENTOR = 'Ms. Sata';
+
+const MISSIONS = [
+  {id:'M0', name:'First Day at SataMart', tag:'Meet the team and see what you will learn', place:'Reception Desk', xp:20, x:21, y:30, phase:'Start'},
+  {id:'M1', name:'Passport to Promotion', tag:'Read two model texts and collect 2 stamps', place:'Reading Corner', xp:60, x:40, y:30, phase:'Understand'},
+  {id:'M2', name:'SOP Detective Lab', tag:'Find the structure, verbs, order and safety clues', place:'SOP Table', xp:80, x:60, y:30, phase:'Understand'},
+  {id:'M3', name:'Content Creator Studio', tag:'Follow the SOP and post a promotion', place:'Photo Studio', xp:120, x:80, y:30, phase:'Create a promotion'},
+  {id:'M4', name:'Rush Hour Challenge', tag:'Solve 3 quick cases before the store opens', place:'Challenge Table', xp:60, x:22, y:62, phase:'Create a promotion'},
+  {id:'M5', name:'Boss Level: Guide Maker', tag:'Write a product guide for customers', place:'Demo Table', xp:130, x:50, y:62, phase:'Write a guide'},
+  {id:'M6', name:'Test Drive & Level Up', tag:'Test, revise, quiz and reflect', place:'Review Desk', xp:130, x:78, y:62, phase:'Reflect'}
+];
+const LEVELS = [[0,'Marketing Trainee'],[100,'Content Assistant'],[300,'Campaign Navigator'],[600,'Quest Finisher']];
+
+/* Vocabulary: [English, Indonesian, example] */
+const VOCAB = {
+  'procedure text':['teks prosedur','A procedure text tells you how to do something.'],
+  'goal':['tujuan','The goal is to set up the phone stand.'],
+  'tools':['alat','You need a camera and a laptop.'],
+  'materials':['bahan','The materials are a product card and photos.'],
+  'step':['langkah','Step 1: Choose a clear photo.'],
+  'instruction':['petunjuk / instruksi','Read the instructions first.'],
+  'choose':['memilih','Choose a clear product photo.'],
+  'write':['menulis','Write the product name.'],
+  'highlight':['menonjolkan / menekankan','Highlight a useful benefit.'],
+  'add':['menambahkan','Add the price.'],
+  'check':['memeriksa','Check the caption.'],
+  'preview':['pratinjau / melihat dulu sebelum unggah','Preview the content.'],
+  'post':['mengunggah / memublikasikan','Post it to the catalogue.'],
+  'benefit':['manfaat','The benefit: it keeps your pens organised.'],
+  'price':['harga','The price is Rp15,000.'],
+  'call to action':['ajakan bertindak','See it in our school catalogue!'],
+  'caption':['keterangan foto / teks unggahan','Write a short caption.'],
+  'promotion':['promosi','We make a promotion for students.'],
+  'customer':['pelanggan / pembeli','The customer asks a question.'],
+  'trust':['percaya','Clear steps help customers trust us.'],
+  'clear':['jelas','This photo is clear.'],
+  'blurry':['buram / tidak jelas','This photo is blurry.'],
+  'first':['pertama','First, choose a photo.'],
+  'next':['selanjutnya','Next, write the name.'],
+  'then':['kemudian / lalu','Then, add the price.'],
+  'finally':['terakhir / akhirnya','Finally, post it.'],
+  'before':['sebelum','Check it before you post it.'],
+  'after':['sesudah','After that, fold the stand.'],
+  'action verb':['kata kerja tindakan','Choose, write, add are action verbs.'],
+  'sequence words':['kata penunjuk urutan','first, next, then, finally'],
+  'imperative':['kalimat perintah','Place your phone in the holder.'],
+  'base verb':['kata kerja bentuk dasar','choose (not chooses)'],
+  'structure':['struktur / susunan','Goal, materials, and steps.'],
+  'logical':['logis / masuk akal','The order is logical.'],
+  'safe':['aman','Keep the area safe.'],
+  'safety':['keselamatan (K3LH)','Safety comes first.'],
+  'tidy up':['merapikan','Tidy up the cable.'],
+  'cable':['kabel','The cable is on the floor.'],
+  'spill':['tumpahan','Wipe the water spill.'],
+  'flat surface':['permukaan datar','Place it on a flat surface.'],
+  'phone stand':['dudukan ponsel','This is a foldable phone stand.'],
+  'foldable':['dapat dilipat','The stand is foldable.'],
+  'base':['alas','The base sits on the desk.'],
+  'support':['penyangga','Open the support.'],
+  'holder':['penahan / tempat ponsel','Place your phone in the holder.'],
+  'place':['meletakkan','Place the stand on the desk.'],
+  'open':['membuka','Open the support.'],
+  'fold':['melipat','Fold the stand.'],
+  'store':['menyimpan','Store it in your bag.'],
+  'remove':['melepas / mengambil','Remove the phone first.'],
+  'stable':['stabil / kokoh','Check that it is stable.'],
+  'draft':['draf / konsep tulisan','Write your first draft.'],
+  'revise':['merevisi / memperbaiki tulisan','Revise your text.'],
+  'feedback':['umpan balik / masukan','Read the feedback.'],
+  'reflection':['refleksi','Write a short reflection.'],
+  'learning objective':['tujuan pembelajaran','Read the learning objective.'],
+  'success criteria':['kriteria ketercapaian (KKTP)','I can draft a procedure text.'],
+  'self-check':['cek diri / menilai diri','Do a self-check.'],
+  'predict':['memprediksi / menebak','Predict the answer.'],
+  'mission':['misi','Start Mission 0.'],
+  'locked':['terkunci','This area is locked.'],
+  'unlock':['membuka (kunci)','Finish M0 to unlock M1.'],
+  'completed':['selesai','Mission completed!'],
+  'stamp':['cap / stempel','You got a stamp.'],
+  'passport':['paspor','Open your passport.'],
+  'catalogue':['katalog','The school catalogue.'],
+  'pencil case':['tempat pensil','A blue pencil case.'],
+  'organised':['tertata / rapi','Keep your pens organised.'],
+  'ambiguous':['ambigu / bermakna ganda','"Put it there" is ambiguous.'],
+  'priority':['prioritas / yang didahulukan','The photo is a priority.'],
+  'deadline':['tenggat waktu','The deadline is 10:00.'],
+  'postpone':['menunda','Postpone the video.'],
+  'intended user':['calon pengguna / sasaran pengguna','The intended user is a student.'],
+  'source':['sumber (informasi)','The source is the product card.'],
+  'warning':['peringatan','Add a warning if needed.'],
+  'care':['perawatan','Care: keep it clean.'],
+  'unsure':['tidak yakin / bingung','I was unsure at step 3.'],
+  'improve':['memperbaiki / meningkatkan','I improved step 2.'],
+  'demonstration':['peragaan / demonstrasi','Prepare a product demonstration.'],
+  'guide':['panduan','Write a product guide.'],
+  'reason':['alasan','Explain your reason.'],
+  'explain':['menjelaskan','Explain one change.'],
+  'compare':['membandingkan','Compare the two photos.'],
+  'hint':['petunjuk bantuan','Open a hint.'],
+  'correct':['benar','Correct!'],
+  'not yet':['belum tepat','Not yet. Try again.'],
+  'try again':['coba lagi','Try again.'],
+  'practice':['latihan','Practice Mode has no timer.'],
+  'challenge':['tantangan','Challenge Mode has a timer.'],
+  'timer':['pengatur waktu','The timer is optional.'],
+  'save':['menyimpan','Save your draft.'],
+  'download':['mengunduh','Download your results.'],
+  'settings':['pengaturan','Open the settings.'],
+  'fullscreen':['layar penuh','Use fullscreen mode.'],
+  'volume':['volume / kekerasan suara','Turn the volume down.'],
+  'background music':['musik latar','Turn off the background music.'],
+  'sound effects':['efek suara','Sound effects are on.'],
+  'narration':['narasi / suara pembaca','Listen to the narration.'],
+  'brief':['arahan singkat (tugas)','Read the brief.'],
+  'identify':['mengidentifikasi / mengenali','Identify the goal.'],
+  'analyse':['menganalisis','Analyse the steps.'],
+  'useful':['berguna','A useful benefit.'],
+  'stationery':['alat tulis','Pens and pencils are stationery.'],
+  'decoration':['hiasan / dekorasi','Extra decoration can wait.'],
+  'content':['konten / isi','Create the content.'],
+  'create':['membuat','Create the content first.'],
+  'summary':['ringkasan','Read the summary.'],
+  'mentor':['pembimbing','Ms. Sata is your mentor.']
+};
+const SCREEN_VOCAB = {
+  cover:['procedure text','promotion','guide','settings','fullscreen','background music'],
+  intro:['mentor','mission','instruction','promotion','customer','guide','choose','place'],
+  map:['mission','locked','unlock','completed','stamp','passport','guide'],
+  M0:['learning objective','success criteria','procedure text','identify','analyse','structure','logical','safety','draft','revise','trust','predict','self-check'],
+  M1:['passport','stamp','goal','materials','step','first','next','then','finally','choose','write','highlight','add','check','preview','post','benefit','call to action','phone stand','base','support','holder','flat surface','stable','remove','fold','store'],
+  M2:['structure','goal','materials','step','action verb','sequence words','imperative','base verb','choose','write','add','check','post','caption','clear','blurry','safe','safety','tidy up','cable','spill','logical'],
+  M3:['choose','write','highlight','add','check','preview','post','benefit','price','call to action','caption','pencil case','organised','stationery','priority','deadline','postpone','decoration','catalogue'],
+  M4:['practice','challenge','timer','base verb','imperative','create','check','post','content','ambiguous','holder','reason','explain'],
+  M5:['brief','customer','intended user','goal','source','materials','step','warning','care','draft','phone stand','base','support','holder','place','open','fold','store','remove','stable','flat surface','first','next','then','finally'],
+  M6:['feedback','unsure','revise','improve','reason','explain','reflection','compare','ambiguous','safety','logical','summary'],
+  report:['summary','completed','feedback','download','save','reflection']
+};
+/* Indonesian "what to do" help per screen */
+const ID_HELP = {
+  cover:'Ini halaman sampul. Klik <b>Start</b> untuk mulai dari awal, atau <b>Continue</b> untuk melanjutkan progres yang tersimpan. <b>Guide</b> berisi cara bermain. <b>Settings</b> untuk mengatur suara.',
+  intro:'Kenalan dengan Ms. Sata, mentor pemasaranmu. Baca cerita, lalu coba latihan kecil: klik satu kartu kata, lalu klik kotak tujuan (atau seret kartu ke kotak). Setelah itu klik <b>Enter the Store</b>.',
+  map:'Ini peta toko SataMart. Ada 7 misi (M0–M6). Klik misi yang menyala (Ready). Misi berwarna abu-abu masih terkunci; selesaikan misi sebelumnya untuk membukanya.',
+  M0:'Baca <b>What Will You Learn?</b> (tujuan pembelajaran dan KKTP). Lalu jawab pertanyaan pemantik (boleh bahasa Indonesia atau Inggris) dan isi cek diri untuk setiap kriteria. Klik <b>Complete Mission</b> untuk mendapat 20 XP.',
+  M1:'Baca dua kartu contoh teks prosedur: <b>Promotion</b> dan <b>Product Guide</b>. Gunakan tab Read, Listen, Notice. Di tab Notice, klik kata yang berwarna kuning untuk melihat penjelasan. Jawab <b>Quick Check</b> untuk mendapat cap (30 XP per kartu).',
+  M2:'Ada 3 meja latihan. Meja 1: cocokkan struktur dan kata kerja. Meja 2: susun urutan langkah. Meja 3: pilih foto yang jelas dan area kerja yang aman. Klik kartu, lalu klik kotak tujuan. Klik <b>Check</b> untuk memeriksa. Boleh mencoba lagi.',
+  M3:'Pelajari 6 langkah membuat konten promosi, lalu praktikkan: buat konten (MK001), perbaiki konten yang kurang (MK002), dan atur prioritas waktu. Tulis mini SOP 3–4 langkah.',
+  M4:'Pilih mode: Practice (tanpa waktu) atau Challenge (dengan waktu). Selesaikan 3 kasus: pahami, putuskan, lalu jelaskan alasanmu. Salah tidak mengurangi XP.',
+  M5:'Final Boss: tulis teks prosedur cara menggunakan produk. Baca brief, isi planner (nama produk, pengguna, tujuan, sumber, langkah), lalu tulis draf dalam bahasa Inggris. Gunakan kerangka A1 dan Word Help jika perlu. Simpan draf.',
+  M6:'Uji panduanmu (bersama teman atau sendiri), revisi bagian yang belum jelas, jawab 6 soal kuis, lalu tulis refleksi (boleh bahasa Indonesia).',
+  report:'Ini laporan akhir. Lihat status misi, XP, dan hasil kuis. Unduh atau salin hasil kerja untuk diserahkan kepada guru. Mutu tulisan dinilai guru dengan rubrik.'
+};
+const STARTERS = [
+  ['I think …','Saya pikir …'],['First, … Next, … Then, … Finally, …','Pertama … Selanjutnya … Kemudian … Terakhir …'],
+  ['I was unsure at step … because …','Saya bingung pada langkah … karena …'],['I changed … because …','Saya mengubah … karena …'],
+  ['I kept … because it is already clear.','Saya mempertahankan … karena sudah jelas.'],['This guide helps you …','Panduan ini membantu kamu …'],
+  ['Can you repeat, please?','Bisakah diulang?'],['What does … mean?','Apa arti …?']
+];
+
+/* Model texts */
+const PROMO_STEPS = [
+  {img:'19_langkah_pilih_foto.png', t:'First, choose a clear product photo. Show the correct product and colour.', short:'Choose a clear product photo.'},
+  {img:'20_langkah_nama_produk.png', t:'Next, write the product name. For example, write "Blue Pencil Case".', short:'Write the product name.'},
+  {img:'21_langkah_manfaat_produk.png', t:'Then, highlight a useful benefit. Use the product card. For example, write "Keep your pens and pencils organised!"', short:'Highlight a useful benefit.'},
+  {img:'22_langkah_harga_ajakan.png', t:'Add the price and a call to action. For example, write "Rp15,000. See it in our school catalogue!"', short:'Add the price and a call to action.'},
+  {img:'23_langkah_periksa_pratinjau.png', t:'Check the photo, product name, benefit, price, and call to action. Preview the complete content and correct any mistake.', short:'Check and preview the content.'},
+  {img:'24_langkah_post_simulasi.png', t:'Finally, post the content to the SataMart practice catalogue. This is a simulation; you do not need a real social media account.', short:'Post it to the practice catalogue.'}
+];
+const PROMO_GOAL = 'Goal: Introduce a product to students through a clear promotion in the SataMart practice catalogue.';
+const PROMO_MAT = 'You need a product information card, product photos, and a caption template.';
+const GUIDE_TEXT = ['Goal: Set up your phone for viewing at a desk.','First, place the stand on a flat surface.','Next, open the support.','Then, place your phone in the holder.','Check that the phone and stand are stable before use.','Finally, remove the phone before folding and storing the stand.'];
+const MENTOR_AUDIO = 'Let us create a product promotion. First, choose a clear product photo. Next, write the product name. Then, highlight a useful benefit. Add the price and a call to action. Check and preview the content. Finally, post it to our practice catalogue.';
+
+/* Handbook */
+const HANDBOOK = [
+  {k:'Concept', h:'What is a procedure text?', b:`<p class="lead">A procedure text explains how to do or use something through clear, ordered steps.</p>
+   <p style="margin-top:8px"><b>Purpose (social function):</b> to help readers complete a task or use a product correctly.</p>
+   <p style="margin-top:8px"><b>In marketing:</b> clear steps help customers understand and trust a product. A promotion makes people interested; a product guide shows them how to use it.</p>`,
+   say:'A procedure text explains how to do or use something through clear, ordered steps. Its purpose is to help readers complete a task or use a product correctly.'},
+  {k:'Structure', h:'Goal, tools or materials, steps', b:`<div class="grid3">
+   <div class="card"><h3>1. Goal</h3><p>States the purpose. <i>"How to Use a Foldable Phone Stand"</i></p></div>
+   <div class="card"><h3>2. Tools / Materials</h3><p>Lists what you need, if any. <i>"You need a product card and photos."</i></p></div>
+   <div class="card"><h3>3. Steps</h3><p>Ordered actions. <i>"First, … Next, … Finally, …"</i></p></div></div>
+   <p style="margin-top:10px">Add <b>tips or warnings</b> only when they are relevant and supported by product information.</p>`,
+   say:'A procedure text has a goal, tools or materials, and steps. Add tips or warnings when they are relevant.'},
+  {k:'Language', h:'Language features', b:`<ul>
+   <li><b>Imperative sentences</b>: base verb + object. <i>"Choose a clear product photo."</i></li>
+   <li><b>Negative instruction</b>: Do not + base verb. <i>"Do not post the wrong price."</i></li>
+   <li><b>Action verbs</b>: choose, write, highlight, add, check, post, place, open, fold, remove.</li>
+   <li><b>Sequence words</b>: first, next, then, finally. <b>Before</b> and <b>after</b> connect actions.</li>
+   <li><b>Simple present</b> for supporting statements: <i>"This pencil case holds your pens."</i></li></ul>`,
+   say:'Use imperative sentences: base verb plus object. For example: Choose a clear product photo. Use sequence words: first, next, then, finally.'},
+  {k:'Promotion SOP', h:'How to Create a Product Promotion', b:'', say:MENTOR_AUDIO},
+  {k:'Product Guide', h:'How to Use a Foldable Phone Stand', b:'', say:GUIDE_TEXT.join(' ')},
+  {k:'Safety (K3LH)', h:'Safe demonstration area', b:`<div class="grid2"><div><img src="${IMG('12_situasi_meja_aman.png')}" alt="A tidy, dry demonstration table" style="border-radius:12px"><p class="small">Safe: dry, tidy table; no cable across the walkway.</p></div>
+   <div><img src="${IMG('13_situasi_meja_perlu_dirapikan.png')}" alt="A table with a water spill and a cable across it" style="border-radius:12px"><p class="small">Needs tidying: water spill and a cable across the table and floor.</p></div></div>
+   <p style="margin-top:8px">Before a demonstration: <b>tidy the cables, dry the table, and use tools as the instructions say.</b></p>`,
+   say:'Before a demonstration, tidy the cables, dry the table, and use the tools as the instructions say.'}
+];
+HANDBOOK[3].b = `<p><b>${PROMO_GOAL}</b></p><p class="small">${PROMO_MAT}</p><ol class="steps">${PROMO_STEPS.map(s=>`<li>${s.t}</li>`).join('')}</ol>`;
+HANDBOOK[4].b = `<div class="row" style="align-items:flex-start;flex-wrap:nowrap"><img src="${IMG('09_produk_dudukan_terbuka.png')}" alt="Open phone stand" style="width:260px"><div><p><b>${GUIDE_TEXT[0]}</b></p><ol class="steps">${GUIDE_TEXT.slice(1).map(s=>`<li>${s}</li>`).join('')}</ol></div></div>`;
+
+/* M6 quiz */
+const QUIZ = [
+  {q:'Which part tells the result you want to achieve?', o:['Goal','Materials','Steps'], a:0, e:'The Goal shows the purpose of the procedure.'},
+  {q:'Choose the correct instruction.', o:['Choose a clear product photo.','Chooses a clear product photo.'], a:0, e:'Instructions use the base verb: "Choose".'},
+  {q:'Fix the order: "Post the content → Check the content → Create the content."', o:['Create → Check → Post','Check → Create → Post','Post → Create → Check'], a:0, e:'Create the content first, check the photo and information, then post it.'},
+  {q:'A cable lies across the demonstration table. What should you do?', o:['Start recording right away.','Tidy the area and the cable first.','Ask the customer to step over it.'], a:1, e:'Tidy the area and cables first so the demonstration is safe. Follow the tool instructions.'},
+  {q:'What should you do before you post a promotion?', o:['Add more decoration.','Check the photo, name, benefit, price, and call to action, then preview.','Post it quickly before 10:00.'], a:1, e:'Check all five parts, then preview the content.'},
+  {q:'Which sentence fixes the ambiguous instruction "Put it there."?', o:['Put it somewhere.','Place your phone in the holder.','Put the thing there now.'], a:1, e:'A clear instruction names the object and the place.'}
+];
+/* ================= ENGINE ================= */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const KEY = 'satamart_procedure_quest_v1';
+
+const FRESH = () => ({
+  started:false, cur:'cover', awarded:{}, teacher:false, helps:0,
+  settings:{music:true, sfx:true, narr:true, mv:0.45, sv:0.8, voice:'', rate:1},
+  m0:{read:false, pred:'', self:{}},
+  m1:{read:{promo:false,guide:false}, notice:{}, qc:{promo:false,guide:false}},
+  m2:{t:{1:false,2:false,3:false}},
+  m3:{learn:false, mk1:{}, mk1done:false, mk2:{}, mk2done:false, prio:false, sop:['','','',''], sopdone:false},
+  m4:{mode:null, res:{}, done:false},
+  m5:{product:'stand', own:'', plan:{name:'Foldable Phone Stand',user:'',goal:'',source:'',tools:'',steps:'',care:''}, draft:'', saved:false},
+  m6:{test:{who:'self', checks:{}, comment:''}, testDone:false, after:'', reason:'', revDone:false, quiz:{first:{}, now:{}}, refl:{pred2:'',q1:'',q2:'',q3:''}, reflDone:false}
+});
+let S = FRESH();
+const UI = {place:{}, tab:{}, sel:null, timer:null};
+
+function deepMerge(base, add){ for(const k in add){ if(add[k] && typeof add[k]==='object' && !Array.isArray(add[k]) && base[k] && typeof base[k]==='object') deepMerge(base[k], add[k]); else base[k]=add[k]; } return base; }
+function load(){ try{ const raw = localStorage.getItem(KEY); if(raw){ S = deepMerge(FRESH(), JSON.parse(raw)); return true; } }catch(e){} return false; }
+let saveT=null;
+function save(quiet){
+  let ok=true; try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ ok=false; }
+  const t=$('#savedTag'); if(!t) return ok;
+  if(S.cur==='cover'){ t.hidden=true; return ok; }
+  t.hidden=false; t.className='saved'+(ok?'':' fail');
+  t.textContent = ok ? '✓ Saved on this device' : '⚠ Save failed — use Download or Copy on the report page';
+  if(ok && !quiet) sfx('save');
+  return ok;
+}
+
+/* ---------- XP & progress ---------- */
+const XPKEYS = {M0:['M0'], M1:['stamp_promo','stamp_guide'], M2:['M2'], M3:['M3'], M4:['M4'], M5:['M5'], M6:['M6']};
+const XPVAL = {M0:20, stamp_promo:30, stamp_guide:30, M2:80, M3:120, M4:60, M5:130, M6:130};
+const totalXP = () => Object.keys(S.awarded).reduce((a,k)=>a+(S.awarded[k]?XPVAL[k]||0:0),0);
+const missionXP = id => XPKEYS[id].reduce((a,k)=>a+(S.awarded[k]?XPVAL[k]:0),0);
+const isDone = id => XPKEYS[id].every(k=>S.awarded[k]);
+const doneCount = () => MISSIONS.filter(m=>isDone(m.id)).length;
+const stamps = () => (S.awarded.stamp_promo?1:0)+(S.awarded.stamp_guide?1:0);
+const isOpen = i => i===0 || S.teacher || isDone(MISSIONS[i-1].id);
+const level = x => LEVELS.filter(l=>x>=l[0]).pop()[1];
+function status(id){
+  const i = MISSIONS.findIndex(m=>m.id===id);
+  if(isDone(id)) return 'done'; if(!isOpen(i)) return 'lock';
+  const p = {M0:S.m0.read, M1:S.m1.read.promo||S.m1.read.guide, M2:Object.values(S.m2.t).some(Boolean), M3:S.m3.learn, M4:!!S.m4.mode, M5:!!S.m5.plan.user, M6:S.m6.testDone}[id];
+  return p ? 'prog' : 'ready';
+}
+const STATUS_TXT = {lock:'🔒 Locked', ready:'★ Ready', prog:'◐ In progress', done:'✓ Completed'};
+function award(key, msg){
+  if(S.awarded[key]) { toast('You already earned this XP. Replaying gives no extra XP.'); return false; }
+  const before = totalXP(); S.awarded[key]=true; save(true);
+  floatXP('+'+XPVAL[key]+' XP'); sfx('xp');
+  const nxt = MISSIONS.findIndex(m=>!isDone(m.id));
+  if(msg!==false) setTimeout(()=>{ if(nxt>0 && isOpen(nxt) && level(before)===level(totalXP())) sfx('unlock'); },700);
+  if(level(before)!==level(totalXP())) setTimeout(()=>toast('Level up! You are now a '+level(totalXP())+'.'),900);
+  renderHUD(); return true;
+}
+
+/* ---------- AUDIO (Web Audio, all sounds generated in code) ---------- */
+let AC=null, musicGain=null, sfxGain=null, musicOn=false, musicTimer=null, nextNoteT=0, step16=0, duck=1;
+function ac(){
+  if(!AC){ try{ AC = new (window.AudioContext||window.webkitAudioContext)();
+      musicGain = AC.createGain(); musicGain.connect(AC.destination);
+      sfxGain = AC.createGain(); sfxGain.connect(AC.destination); applyVol(); }catch(e){ AC=null; } }
+  if(AC && AC.state==='suspended') AC.resume();
+  return AC;
+}
+function applyVol(){ if(!AC) return; musicGain.gain.setTargetAtTime((S.settings.music? S.settings.mv*0.5 : 0)*duck, AC.currentTime, .15); sfxGain.gain.value = S.settings.sfx? S.settings.sv : 0; }
+function tone(f, t, d, type='sine', g=.25, dest){ const o=AC.createOscillator(), v=AC.createGain(); o.type=type; o.frequency.setValueAtTime(f,t); v.gain.setValueAtTime(0,t); v.gain.linearRampToValueAtTime(g,t+.012); v.gain.exponentialRampToValueAtTime(.0008,t+d); o.connect(v); v.connect(dest||sfxGain); o.start(t); o.stop(t+d+.05); return o; }
+function noise(t, d, g=.2, hp=2000, dest){ const len=Math.max(1,Math.floor(AC.sampleRate*d)); const b=AC.createBuffer(1,len,AC.sampleRate); const ch=b.getChannelData(0); for(let i=0;i<len;i++) ch[i]=(Math.random()*2-1)*(1-i/len); const s=AC.createBufferSource(); s.buffer=b; const f=AC.createBiquadFilter(); f.type='highpass'; f.frequency.value=hp; const v=AC.createGain(); v.gain.value=g; s.connect(f); f.connect(v); v.connect(dest||sfxGain); s.start(t); }
+function sfx(name){
+  if(!S.settings.sfx || !ac()) return; const t=AC.currentTime+.01;
+  switch(name){
+    case 'click': tone(1046,t,.07,'triangle',.18); tone(1568,t+.02,.05,'sine',.08); break;
+    case 'tab': tone(784,t,.06,'triangle',.12); break;
+    case 'pick': tone(660,t,.06,'triangle',.16); tone(990,t+.04,.06,'triangle',.12); break;
+    case 'drop': tone(520,t,.08,'sine',.2); noise(t,.04,.06,3000); break;
+    case 'correct': [784,988,1318].forEach((f,i)=>tone(f,t+i*.08,.22,'triangle',.2)); tone(1568,t+.24,.3,'sine',.08); break;
+    case 'wrong': tone(392,t,.16,'sine',.18); tone(330,t+.12,.24,'sine',.16); break;
+    case 'stamp': noise(t,.12,.45,200); tone(110,t,.2,'sine',.5); tone(880,t+.12,.25,'triangle',.12); break;
+    case 'xp': [523,659,784,1046,1318].forEach((f,i)=>tone(f,t+i*.07,.2,'square',.07)); break;
+    case 'unlock': [440,554,659,880].forEach((f,i)=>tone(f,t+i*.06,.35,'triangle',.14)); noise(t+.2,.3,.05,6000); break;
+    case 'win': [523,659,784,1046,784,1046,1318].forEach((f,i)=>tone(f,t+i*.11,.35,'triangle',.17)); break;
+    case 'save': tone(1318,t,.12,'sine',.1); tone(1760,t+.07,.18,'sine',.08); break;
+    case 'open': tone(587,t,.08,'sine',.12); tone(880,t+.05,.12,'sine',.1); break;
+    case 'close': tone(880,t,.07,'sine',.1); tone(587,t+.05,.1,'sine',.08); break;
+    case 'whoosh': noise(t,.25,.12,900); break;
+    case 'tick': tone(1800,t,.03,'square',.05); break;
+    case 'post': [659,784,1046].forEach((f,i)=>tone(f,t+i*.05,.15,'sine',.15)); noise(t,.3,.08,4000); break;
+  }
+}
+/* Background music: cheerful shop loop, F – Dm – Bb – C, 96 BPM */
+const CH = [[53,57,60,65],[50,57,62,65],[46,53,58,62],[48,55,60,64]];
+const MEL = [72,null,69,72, 74,null,72,null, 69,null,67,65, 67,null,null,null, 74,null,72,74, 77,null,74,null, 72,null,70,69, 67,null,69,null];
+const mtof = m => 440*Math.pow(2,(m-69)/12);
+function schedMusic(){
+  const spb = 60/96/4;
+  while(nextNoteT < AC.currentTime + .15){
+    const t=nextNoteT, s=step16%64, bar=Math.floor(s/16), ch=CH[bar], b=s%16;
+    if(b===0){ ch.forEach(n=>{ const o=AC.createOscillator(), v=AC.createGain(), f=AC.createBiquadFilter(); o.type='triangle'; o.frequency.value=mtof(n); f.type='lowpass'; f.frequency.value=900; v.gain.setValueAtTime(0,t); v.gain.linearRampToValueAtTime(.05,t+.3); v.gain.linearRampToValueAtTime(.03,t+spb*15); v.gain.linearRampToValueAtTime(0,t+spb*16); o.connect(f); f.connect(v); v.connect(musicGain); o.start(t); o.stop(t+spb*16+.05); }); }
+    if(b===0||b===8||b===14) tone(mtof(ch[0]-12), t, spb*(b===14?1.6:5), 'sine', .2, musicGain);
+    if(b%2===0){ const arp=ch[(b/2)%4]+12; tone(mtof(arp), t, .18, 'triangle', .045, musicGain); }
+    if(b%4===2) noise(t,.04,.05,7000,musicGain);
+    if(b===4||b===12) noise(t,.09,.06,1500,musicGain);
+    const m = MEL[(s%32)]; if(m && s>=16 && s%2===0) tone(mtof(m), t, spb*1.8, 'sine', .06, musicGain);
+    nextNoteT += spb; step16++;
+  }
+}
+function startMusic(){ if(!S.settings.music || musicOn || !ac()) return; musicOn=true; nextNoteT=AC.currentTime+.1; step16=0; applyVol(); musicTimer=setInterval(schedMusic,40); }
+function stopMusic(){ musicOn=false; clearInterval(musicTimer); }
+
+/* Narration (browser text-to-speech, English) */
+/* Ranks the device's English voices so the most natural (neural / premium / online) female voice is used for Ms. Sata. */
+let voice=null, VOICES=[];
+function voiceScore(v){
+  const n=v.name, l=v.lang||''; let s=0;
+  if(!/^en/i.test(l)) return -999;
+  if(/natural|neural/i.test(n)) s+=60;
+  if(/premium|enhanced|online/i.test(n)) s+=45;
+  if(/google us english|google uk english female/i.test(n)) s+=40;
+  if(/\b(ava|jenny|aria|michelle|emma|ana|sonia|libby|natasha|clara|zoe|allison|susan|samantha|serena|karen|moira|tessa|kate|stephanie|nicky)\b/i.test(n)) s+=25;
+  if(/female|woman/i.test(n)) s+=15;
+  if(/\b(david|mark|guy|daniel|alex|fred|tom|aaron|ryan|eric|christopher|male|andrew|brian|roger|steffan)\b/i.test(n)) s-=40;
+  if(/compact|espeak|robot|novelty|bad news|bells|bubbles|cellos|whisper|zarvox|trinoids|albert|jester|organ|superstar|boing|wobble/i.test(n)) s-=80;
+  if(/en[-_]US/i.test(l)) s+=10; else if(/en[-_](GB|AU|IE|CA)/i.test(l)) s+=6;
+  if(v.localService===false) s+=8;
+  return s;
+}
+function pickVoice(){ try{ VOICES = speechSynthesis.getVoices().filter(v=>voiceScore(v)>-500).sort((a,b)=>voiceScore(b)-voiceScore(a));
+  voice = VOICES.find(v=>v.name===S.settings.voice) || VOICES[0] || null; }catch(e){} }
+try{ speechSynthesis.onvoiceschanged = pickVoice; pickVoice(); setTimeout(pickVoice,800); }catch(e){}
+function speak(text, slow){
+  if(!S.settings.narr){ toast('Narration is off. Turn it on in Settings, or read the transcript.'); return; }
+  if(!('speechSynthesis' in window)){ toast('Narration is not available on this device. Please read the transcript.'); return; }
+  try{ speechSynthesis.cancel(); if(!voice) pickVoice();
+    /* speak sentence by sentence: more natural pauses, and avoids Chrome cutting off long text */
+    const parts = String(text).replace(/\s+/g,' ').match(/[^.!?:]+[.!?:]*["”']?\s*/g) || [text];
+    const rate = (S.settings.rate||1) * (slow?0.72:0.96);
+    duck=.25; applyVol();
+    parts.forEach((p,i)=>{ const u=new SpeechSynthesisUtterance(p.trim()); u.lang = voice? voice.lang : 'en-US'; if(voice) u.voice=voice;
+      u.rate=rate; u.pitch=1.04; u.volume=1;
+      if(i===parts.length-1) u.onend=u.onerror=()=>{duck=1; applyVol();};
+      speechSynthesis.speak(u); });
+  }catch(e){ duck=1; applyVol(); toast('Narration could not play. Please read the transcript.'); }
+}
+const ICON = {
+  play:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>',
+  music:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+  sfx:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg>',
+  help:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>',
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>',
+  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  full:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>',
+  exit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>',
+  map:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15"/><path d="M15 6v15"/></svg>',
+  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/></svg>',
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>'
+};
+const listenBtn = (text, label='Listen', slow=false) => `<button class="listen" data-act="say" data-slow="${slow?1:''}" data-text="${esc(text)}">${ICON.play}${label}</button>`;
+
+/* ---------- Scaling & fullscreen ---------- */
+function fit(){
+  const app=$('#app'), cs=getComputedStyle(app);
+  const w = app.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const h = app.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const k = Math.max(.1, Math.min(w/1280, h/720));
+  const wrap=$('#stageWrap'); wrap.style.width=(1280*k)+'px'; wrap.style.height=(720*k)+'px';
+  $('#stage').style.transform = `scale(${k})`;
+}
+const isFS = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+function toggleFS(){
+  const el=document.documentElement;
+  try{
+    if(isFS()){ (document.exitFullscreen||document.webkitExitFullscreen).call(document); }
+    else { const r=(el.requestFullscreen||el.webkitRequestFullscreen); if(!r) throw 0; const p=r.call(el); if(p&&p.catch) p.catch(()=>toast('Fullscreen is not allowed here. Open the page in its own browser tab, then try again.')); }
+  }catch(e){ toast('Fullscreen is not available on this device or view.'); }
+}
+['fullscreenchange','webkitfullscreenchange'].forEach(ev=>document.addEventListener(ev,()=>{ document.body.classList.toggle('fsmode',isFS()); $('#app').classList.toggle('fs',isFS()); setTimeout(fit,50); renderHUD(); }));
+window.addEventListener('resize', fit);
+
+/* ---------- HUD ---------- */
+function renderHUD(){
+  const h=$('#hud'); const cover = S.cur==='cover';
+  const xp=totalXP();
+  const scr = SCREENS[S.cur]||{};
+  h.className = 'hud' + (cover?' clear':'');
+  h.innerHTML = `
+   ${cover?'<div class="spacer"></div>':`<div class="brand"><span class="dot">S</span>SataMart</div><div class="loc">${esc(scr.loc||'')}</div>
+   <div class="stats">
+     <div class="stat" title="Experience points">XP <span class="xpbar"><i style="width:${xp/6}%"></i></span> ${xp}/600</div>
+     <div class="stat" title="Passport stamps">◉ ${stamps()}/2</div>
+     <div class="stat" title="Missions completed">✓ ${doneCount()}/7</div>
+   </div>`}
+   <div class="tools">
+     ${cover?'':`<button class="ib" data-act="go" data-to="map" data-tip="Store map" aria-label="Store map">${ICON.map}</button>
+     <button class="ib" data-act="handbook" data-tip="Handbook" aria-label="Handbook">${ICON.book}</button>`}
+     <button class="ib assist" data-act="assist" aria-label="Assistance: vocabulary and Indonesian help">Aa<span style="font-size:12px">ID</span> Assistance</button>
+     <button class="ib" data-act="help" data-tip="Help: how to use" aria-label="Help">${ICON.help}</button>
+     <button class="ib" data-act="info" data-tip="Information" aria-label="Information">${ICON.info}</button>
+     <button class="ib ${S.settings.music?'':'off'}" data-act="musicTog" data-tip="Background music" aria-label="Background music on or off">${ICON.music}</button>
+     <button class="ib ${S.settings.sfx?'':'off'}" data-act="sfxTog" data-tip="Sound effects" aria-label="Sound effects on or off">${ICON.sfx}</button>
+     <button class="ib" data-act="settings" data-tip="Settings" aria-label="Settings">${ICON.gear}</button>
+     <button class="ib" data-act="fs" data-tip="${isFS()?'Exit fullscreen':'Fullscreen'}" aria-label="Fullscreen">${isFS()?ICON.exit:ICON.full}</button>
+   </div>`;
+}
+
+/* ---------- Modals & toasts ---------- */
+function modal(title, body, opts={}){
+  sfx('open');
+  const L=$('#layer'); const id='m'+Date.now();
+  const d=document.createElement('div'); d.className='mback'; d.id=id;
+  d.innerHTML = `<div class="modal ${opts.size||''}" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+    <div class="modal-h">${opts.icon||''}<h2>${title}</h2><button class="ib x" data-act="closeModal" aria-label="Close">✕</button></div>
+    <div class="modal-b">${body}</div>${opts.foot?`<div class="modal-f">${opts.foot}</div>`:''}</div>`;
+  L.appendChild(d); if(opts.after) opts.after(d);
+  return d;
+}
+function closeModal(){ const m=$$('#layer .mback').pop(); if(m){ m.remove(); sfx('close'); } }
+let toastT;
+function toast(msg){ const L=$('#layer'); $$('.toast',L).forEach(t=>t.remove()); const t=document.createElement('div'); t.className='toast'; t.innerHTML=msg; L.appendChild(t); clearTimeout(toastT); toastT=setTimeout(()=>t.remove(),3200); }
+function floatXP(txt){ const d=document.createElement('div'); d.className='xpfloat'; d.textContent=txt; $('#layer').appendChild(d); setTimeout(()=>d.remove(),1700); confetti(); }
+function confetti(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const c=document.createElement('canvas'); c.className='confetti'; c.width=1280; c.height=720; $('#layer').appendChild(c);
+  const x=c.getContext('2d'); const cols=['#D3263A','#1D2A5B','#F2B21B','#1E9C8E','#fff'];
+  const P=Array.from({length:90},()=>({x:640+(Math.random()-.5)*200,y:360,vx:(Math.random()-.5)*14,vy:-Math.random()*14-4,r:Math.random()*6+4,c:cols[Math.floor(Math.random()*5)],a:Math.random()*6}));
+  let f=0; (function loop(){ x.clearRect(0,0,1280,720); P.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.45;p.a+=.2;x.save();x.translate(p.x,p.y);x.rotate(p.a);x.fillStyle=p.c;x.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);x.restore();}); if(++f<80) requestAnimationFrame(loop); else c.remove(); })();
+}
+function feedback(el, ok, msg){ if(!el) return; el.innerHTML = `<div class="fb ${ok===true?'ok':ok===false?'no':'info'}"><span class="ic">${ok===true?'✓':ok===false?'!':'i'}</span><div>${ok===true?'<b>Correct!</b> ':ok===false?'<b>Not yet.</b> ':''}${msg}</div></div>`; if(ok===true) sfx('correct'); else if(ok===false) sfx('wrong'); }
+
+/* ---------- Placement (click-select-place + drag and drop) ---------- */
+function placeHTML(id, chips, slots, opt={}){
+  const st = UI.place[id] || (UI.place[id] = {vals: slots.map(()=>null), checked:false});
+  const used = st.vals.filter(v=>v!==null);
+  return `<div class="placegame" data-pid="${id}">
+    <div class="bank" aria-label="Word cards">${chips.map(c=>`<span class="chip ${used.includes(c.v)?'used':''} ${UI.sel&&UI.sel.pid===id&&UI.sel.v===c.v?'sel':''}" draggable="true" tabindex="0" role="button" data-act="chip" data-pid="${id}" data-v="${esc(c.v)}">${c.l}</span>`).join('')}</div>
+    <div class="${opt.cls||''}" style="margin-top:10px">${slots.map((s,i)=>{ const v=st.vals[i]; const c=chips.find(x=>x.v===v); const mark = st.checked&&v!==null ? (v===s.a?'ok':'no') : '';
+      return `<div class="slotrow">${s.pre||''}<span class="slot ${v===null?'empty':''} ${mark}" tabindex="0" role="button" data-act="slot" data-pid="${id}" data-i="${i}">${v===null?(s.ph||'Drop here'):c.l}${mark?`<span class="g">${mark==='ok'?'✓':'✗'}</span>`:''}</span>${s.post||''}</div>`; }).join('')}</div>
+  </div>`;
+}
+function placeCheck(id, slots){ const st=UI.place[id]; st.checked=true; return st.vals.every((v,i)=>v===slots[i].a); }
+function placeFull(id){ return UI.place[id] && UI.place[id].vals.every(v=>v!==null); }
+
+/* ---------- Event delegation ---------- */
+const ACT = {};
+document.addEventListener('click', e=>{
+  const t=e.target.closest('[data-act]'); if(!t || t.disabled) return;
+  ac(); if(S.started) startMusic();
+  const a=t.dataset.act;
+  if(!['chip','slot','say','mc'].includes(a) && !t.dataset.nosfx) sfx(a.startsWith('tab')?'tab':'click');
+  if(ACT[a]) ACT[a](t, e);
+});
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape' && $('#layer .mback')) closeModal();
+  if((e.key==='Enter'||e.key===' ') && e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); }
+});
+document.addEventListener('dragstart', e=>{ const c=e.target.closest && e.target.closest('.chip'); if(!c) return; UI.sel={pid:c.dataset.pid, v:c.dataset.v}; e.dataTransfer.setData('text/plain', c.dataset.v); sfx('pick'); });
+document.addEventListener('dragover', e=>{ const s=e.target.closest && e.target.closest('.slot'); if(s){ e.preventDefault(); s.classList.add('hot'); } });
+document.addEventListener('dragleave', e=>{ const s=e.target.closest && e.target.closest('.slot'); if(s) s.classList.remove('hot'); });
+document.addEventListener('drop', e=>{ const s=e.target.closest && e.target.closest('.slot'); if(!s) return; e.preventDefault(); ACT.slot(s); });
+
+ACT.chip = t => { const pid=t.dataset.pid, v=t.dataset.v; UI.sel = (UI.sel && UI.sel.pid===pid && UI.sel.v===v) ? null : {pid, v}; sfx('pick'); $$(`.chip[data-pid="${pid}"]`).forEach(c=>c.classList.toggle('sel', !!UI.sel && c.dataset.v===UI.sel.v)); };
+ACT.slot = t => {
+  const pid=t.dataset.pid, i=+t.dataset.i, st=UI.place[pid]; if(!st) return;
+  if(UI.sel && UI.sel.pid===pid){ const old=st.vals.indexOf(UI.sel.v); if(old>-1) st.vals[old]=null; st.vals[i]=UI.sel.v; UI.sel=null; sfx('drop'); }
+  else if(st.vals[i]!==null){ st.vals[i]=null; sfx('tab'); }
+  else { toast('First click a word card, then click a box. You can also drag the card.'); return; }
+  st.checked=false; rerender();
+};
+ACT.say = t => speak(t.dataset.text, !!t.dataset.slow);
+ACT.closeModal = () => closeModal();
+ACT.go = t => go(t.dataset.to);
+ACT.fs = () => toggleFS();
+ACT.musicTog = () => { S.settings.music=!S.settings.music; if(S.settings.music){ startMusic(); } applyVol(); save(true); renderHUD(); toast(S.settings.music?'Background music on':'Background music off'); };
+ACT.sfxTog = () => { S.settings.sfx=!S.settings.sfx; applyVol(); save(true); renderHUD(); toast(S.settings.sfx?'Sound effects on':'Sound effects off'); };
+ACT.tab = t => { UI.tab[t.dataset.k]=t.dataset.v; rerender(); };
+
+/* ---------- Router ---------- */
+const SCREENS = {};
+function go(name){
+  if(!SCREENS[name]) return;
+  if(name.startsWith('M')){ const i=MISSIONS.findIndex(m=>m.id===name); if(!isOpen(i)){ lockedMsg(i); return; } }
+  try{ speechSynthesis.cancel(); }catch(e){}
+  clearInterval(UI.timer);
+  if(S.cur!==name) sfx('whoosh');
+  S.cur=name; UI.sel=null; if(name!=='cover') save(true); rerender();
+}
+function rerender(){
+  const scr=SCREENS[S.cur]; const box=$('#scene');
+  const keep = {}; $$('.panel-b, .modal-b', box).forEach((el,i)=>keep[i]=el.scrollTop);
+  box.innerHTML = scr.render(); renderHUD();
+  $$('.panel-b', box).forEach((el,i)=>{ if(keep[i]) el.scrollTop=keep[i]; });
+  if(scr.after) scr.after();
+  if(S.cur==='cover') $('#savedTag').hidden=true;
+}
+function lockedMsg(i){
+  const prev=MISSIONS[i-1];
+  modal('🔒 '+MISSIONS[i].id+' is locked', `<p class="lead">Complete <b>${prev.id} ${prev.name}</b> first to unlock <b>${MISSIONS[i].id} ${MISSIONS[i].name}</b>.</p><p class="small" style="margin-top:8px">Selesaikan ${prev.id} terlebih dahulu untuk membuka misi ini.</p>`, {size:'narrow', foot:`<button class="btn navy" data-act="closeModal">OK</button>`});
+}
+const mentorHTML = (pose, text, opt={}) => `<div class="mentor" style="${opt.style||''}"><img src="${IMG(pose)}" alt="${MENTOR}, the marketing mentor"></div>
+  ${text?`<div class="bubble" style="left:${opt.bx??14}px;bottom:${opt.by??352}px;width:${opt.bw??220}px"><span class="who">${MENTOR}</span>${text}<div style="margin-top:6px" class="say">${listenBtn(text.replace(/<[^>]+>/g,''))}</div></div>`:''}`;
+/* ================= SCREENS: cover, intro, map, support panels ================= */
+SCREENS.cover = { loc:'Cover',
+  render(){ const has = S.started;
+    return `<div class="bg" style="background-image:url(${IMG('01_latar_toko.png')})"></div>
+    <div class="cover-title">
+      <span class="eyebrow">English · Procedure Text · Digital Business</span>
+      <h1>Procedure Text for <em>SataMart</em> Product Marketing</h1>
+      <p>Join the SataMart marketing team. Follow clear steps, create a promotion, and write a product guide for customers.</p>
+    </div>
+    <div class="cover-btns">
+      <button class="btn red lg" data-act="start">▶ Start</button>
+      <button class="btn navy lg" data-act="continue" ${has?'':'disabled'}>⟳ Continue</button>
+      <button class="btn ghost lg" data-act="help">? Guide</button>
+      <button class="btn ghost lg" data-act="settings">⚙ Settings</button>
+    </div>
+    <img class="cover-sata" src="${IMG('04_kak_sata_menyambut.png')}" alt="${MENTOR} welcomes you">`; }
+};
+ACT.start = () => {
+  if(S.started && Object.keys(S.awarded).length){ modal('Start again?', `<p class="lead">You already have saved progress (${totalXP()} XP).</p><p style="margin-top:8px">Choose <b>Continue</b> to keep your progress, or <b>Restart</b> to delete it and start from zero.</p>`, {size:'narrow', foot:`<button class="btn ghost" data-act="closeModal">Cancel</button><button class="btn navy" data-act="continue">Continue</button><button class="btn red" data-act="askReset">Restart…</button>`}); return; }
+  S.started=true; ac(); startMusic(); go('intro');
+};
+ACT.continue = () => { closeModal(); S.started=true; ac(); startMusic(); go('map'); };
+
+/* Scene 2: Role & guide */
+SCREENS.intro = { loc:'Your role',
+  render(){
+    return `<div class="bg soft" style="background-image:url(${IMG('03_latar_studio.png')})"></div>
+    ${mentorHTML('04_kak_sata_menyambut.png', 'Welcome to the team! Clear steps help us promote products and guide our customers.', {bw:230})}
+    <div class="panel main-panel">
+      <div class="panel-h"><h2>Your Role at SataMart</h2></div>
+      <div class="panel-b">
+        <div class="grid2">
+          <div class="col">
+            <div class="card"><div class="kicker">The story</div>
+              <p style="margin-top:4px">SataMart needs content for the <b>student product catalogue</b>. You are a new member of the <b>marketing team</b>.</p>
+              <ol class="steps"><li>Follow the instructions to make a <b>promotion</b>.</li><li>Customers see the catalogue and ask: <i>"How do I use it?"</i></li><li>You write a <b>product guide</b> for a demonstration.</li></ol>
+            </div>
+            <div class="card"><div class="kicker">Your mentor</div><p style="margin-top:4px"><b>${MENTOR}</b> is a team mentor. She explains each mission and gives feedback. Click ${listenBtn('Clear steps help us promote products and guide our customers.')} to hear her.</p></div>
+          </div>
+          <div class="card"><div class="kicker">Try it: how to play</div>
+            <p style="margin-top:4px">Click a word card, then click the box. You can also <b>drag</b> the card.</p>
+            ${placeHTML('intro', [{v:'go',l:'🗺 Map'},{v:'help',l:'? Help'},{v:'as',l:'Aa Assistance'}], [
+              {a:'help', pre:'<span style="width:190px">How to use the game:</span>', ph:'Drop here'},
+              {a:'as', pre:'<span style="width:190px">Words in Indonesian:</span>', ph:'Drop here'},
+              {a:'go', pre:'<span style="width:190px">Choose a mission:</span>', ph:'Drop here'}])}
+            <div class="row" style="margin-top:8px"><button class="btn teal sm" data-act="introCheck">Check</button></div>
+            <div id="introFb"></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-f"><span class="small">The practice is optional.</span><span class="spacer"></span><button class="btn red" data-act="go" data-to="map">Enter the Store ➜</button></div>
+    </div>`; }
+};
+ACT.introCheck = () => { const sl=[{a:'help'},{a:'as'},{a:'go'}]; if(!placeFull('intro')) return feedback($('#introFb'), null, 'Fill all three boxes first.'); const ok=placeCheck('intro', sl); rerender(); feedback($('#introFb'), ok, ok?'You know the buttons. Click <b>Enter the Store</b>.':'Look at the icons in the top bar: ? is Help, Aa is Assistance. Click a wrong box to remove the card.'); };
+
+/* Scene 3: Store map */
+SCREENS.map = { loc:'Store map',
+  render(){
+    const next = MISSIONS.find((m,i)=>!isDone(m.id) && isOpen(i));
+    return `<div class="bg" style="background-image:url(${IMG('02_latar_peta_toko.png')})"></div>
+    ${MISSIONS.map((m,i)=>{ const st=status(m.id); return `<button class="spot ${st==='lock'?'locked':st==='done'?'done':'ready'}" style="left:${m.x}%;top:${m.y}%" data-act="go" data-to="${m.id}" aria-label="${m.id} ${m.name}, ${STATUS_TXT[st]}">
+      <span class="badge">${st==='lock'?'🔒':st==='done'?'✓':m.id}</span>
+      <span class="lbl">${m.id} · ${m.name}<br><span class="pill ${st}" style="margin-top:3px">${STATUS_TXT[st]}</span> <span class="small">${missionXP(m.id)}/${m.xp} XP</span></span></button>`; }).join('')}
+    <div class="mapbar">
+      <div style="min-width:0"><b>Level:</b> ${level(totalXP())}<br><span class="small">Path: Understand M0–M2 · Create a promotion M3–M4 · Write a guide M5 · Reflect M6</span></div>
+      <span class="spacer"></span>
+      <button class="btn ghost sm" data-act="handbook">Handbook</button>
+      ${doneCount()===7?'':`<button class="btn ghost sm" data-act="go" data-to="report">Progress report</button>`}
+      ${next?`<button class="btn red sm" data-act="go" data-to="${next.id}">Continue Mission: ${next.id} ➜</button>`:`<button class="btn teal sm" data-act="go" data-to="report">See Final Report ➜</button>`}
+    </div>`; }
+};
+
+/* Help (how to use) */
+ACT.help = () => modal('Help: How to Use This Game', `
+  <div class="grid2">
+   <div class="col">
+    <div class="card"><h3>1 · Start</h3><p><b>Start</b> begins a new game. <b>Continue</b> opens the map with your saved progress. Your progress saves on this device automatically.</p></div>
+    <div class="card"><h3>2 · Map and missions</h3><p>Click a glowing area on the map. Finish missions in order: M0 → M6. Locked areas tell you what to finish first.</p></div>
+    <div class="card"><h3>3 · Answer and fix</h3><p>Click an answer or a word card, then click a box (or drag the card). Click <b>Check</b>. If it is <b>Not yet</b>, read the hint and try again. Mistakes never take away XP.</p></div>
+    <div class="card"><h3>4 · XP and stamps</h3><p>You get XP once per mission (600 XP in total) and two passport stamps in M1. XP shows your progress. Your teacher assesses your writing.</p></div>
+   </div>
+   <div class="col">
+    <div class="card"><h3>Top bar buttons</h3>
+     <table class="t" style="font-size:15px"><tbody>
+      <tr><td style="width:44px;color:var(--navy)">${ICON.map}</td><td><b>Map</b>: go back to the store map.</td></tr>
+      <tr><td style="color:var(--navy)">${ICON.book}</td><td><b>Handbook</b>: the lesson notes. Open it any time.</td></tr>
+      <tr><td><b style="background:var(--gold);padding:2px 5px;border-radius:5px">Aa</b></td><td><b>Assistance</b>: word list with Indonesian meanings and help in Bahasa Indonesia.</td></tr>
+      <tr><td style="color:var(--navy)">${ICON.help}</td><td><b>Help</b>: this page.</td></tr>
+      <tr><td style="color:var(--navy)">${ICON.info}</td><td><b>Information</b>: creator and credits.</td></tr>
+      <tr><td style="color:var(--navy)">${ICON.music}</td><td><b>Music</b> on/off. ${ICON.sfx.replace('<svg','<svg width="18" height="18"')} <b>Sound effects</b> on/off.</td></tr>
+      <tr><td style="color:var(--navy)">${ICON.gear}</td><td><b>Settings</b>: volume, narration, restart.</td></tr>
+      <tr><td style="color:var(--navy)">${ICON.full}</td><td><b>Fullscreen</b>: make the game fill the screen. Press it again (or Esc) to exit.</td></tr>
+      <tr><td><span class="listen">${ICON.play}Listen</span></td><td>Hear the English text.</td></tr>
+     </tbody></table></div>
+    <div class="card"><h3>Keyboard</h3><p>Use <b>Tab</b> to move, <b>Enter</b> or <b>Space</b> to choose, and <b>Esc</b> to close a window.</p></div>
+   </div>
+  </div>`, {size:'wide', foot:`<button class="btn navy" data-act="closeModal">Got it</button>`});
+
+/* Information */
+ACT.info = () => modal('Information', `
+  <div class="row" style="align-items:flex-start;flex-wrap:nowrap;gap:20px">
+    <img src="${IMG('06_kak_sata_apresiasi.png')}" alt="" style="width:170px;flex:none">
+    <div class="col" style="min-width:0">
+      <div class="card navy"><div class="kicker" style="color:var(--gold)">Creator</div><h3 style="font-size:26px">Ni Putu Herma Yanthi, S.Pd., M.Pd.</h3><p><b>School:</b> SMK Negeri 1 Tabanan</p><p><b>Year:</b> 2026</p></div>
+      <div class="card"><h3>About this learning game</h3>
+        <p><b>Title:</b> Procedure Text for SataMart Product Marketing<br><b>Subject:</b> English · Grade XI · Phase F · Digital Business<br><b>Learning objective (TP F2):</b> Students are able to create a procedure text.</p></div>
+      <div class="card"><h3>References and credits</h3><ul style="margin:4px 0;padding-left:20px;font-size:16px">
+        <li>Content reference: ATP Grade XI Phase F 2026/2027, TP F2 and KKTP Procedure Text.</li>
+        <li>Interaction inspiration: Global Kitchen Quest, Ruang Murid Kemendikdasmen.</li>
+        <li>Storyboard format reference: <i>Storyboard Gim Edukasi Misi Agripreneur</i> by Fath Fadhilah Wardiwira.</li>
+        <li>Illustrations and icons: made with AI assistance (ChatGPT image generation). <b>Gambar ini dibuat oleh AI.</b> Content adaptation and use in teaching materials: Ni Putu Herma Yanthi, S.Pd., M.Pd.</li>
+        <li>Music and sound effects: generated in code for this game (no external audio files). Narration: the most natural English voice available on the device (choose it in Settings).</li>
+        <li>SataMart, ${MENTOR}, products, and the catalogue are fictional simulations.</li></ul></div>
+    </div>
+  </div>`, {size:'wide', foot:`<button class="btn navy" data-act="closeModal">Close</button>`});
+
+/* Assistance: vocabulary + Indonesian help */
+ACT.assist = () => { S.helps++; save(true);
+  const key = S.cur; const words = (SCREEN_VOCAB[key]||SCREEN_VOCAB.map).filter(w=>VOCAB[w]);
+  const row = w => `<tr><td><span class="word">${w}</span> <button class="listen" style="padding:0 6px" data-act="say" data-text="${esc(w)}" aria-label="Listen to ${esc(w)}">${ICON.play}</button></td><td class="idn">${VOCAB[w][0]}</td><td class="small">${esc(VOCAB[w][1])}</td></tr>`;
+  modal('Assistance · Bantuan Bahasa', `
+    <div class="fb info" style="margin-top:0"><span class="ic">i</span><div><b>Apa yang harus dilakukan di halaman ini?</b><br>${ID_HELP[key]||ID_HELP.map}</div></div>
+    <div class="tabs" style="padding:12px 0 0">
+      <button class="tab on" data-act="asTab" data-v="page">Words on this page</button>
+      <button class="tab" data-act="asTab" data-v="all">All words (A–Z)</button>
+      <button class="tab" data-act="asTab" data-v="phr">Useful sentences</button>
+    </div>
+    <div style="border-top:2px solid var(--navy);padding-top:10px">
+      <div id="as-page"><table class="t"><thead><tr><th style="width:32%">English</th><th style="width:30%">Bahasa Indonesia</th><th>Example</th></tr></thead><tbody>${words.map(row).join('')}</tbody></table></div>
+      <div id="as-all" hidden><input type="text" id="vsearch" placeholder="Search a word… / Cari kata…" aria-label="Search a word" style="margin-bottom:8px"><table class="t"><thead><tr><th style="width:32%">English</th><th style="width:30%">Bahasa Indonesia</th><th>Example</th></tr></thead><tbody id="vall">${Object.keys(VOCAB).sort().map(row).join('')}</tbody></table></div>
+      <div id="as-phr" hidden><table class="t"><thead><tr><th>English</th><th>Bahasa Indonesia</th></tr></thead><tbody>${STARTERS.map(s=>`<tr><td class="word">${s[0]}</td><td class="idn">${s[1]}</td></tr>`).join('')}</tbody></table></div>
+    </div>`, {size:'wide', foot:`<span class="small" style="margin-right:auto">Using Assistance never reduces your XP.</span><button class="btn navy" data-act="closeModal">Close</button>`,
+    after(d){ const inp=$('#vsearch',d); inp.addEventListener('input',()=>{ const q=inp.value.toLowerCase().trim(); $$('#vall tr',d).forEach(tr=>tr.hidden = q && !tr.textContent.toLowerCase().includes(q)); }); }});
+};
+ACT.asTab = t => { const d=t.closest('.modal'); $$('.tab',d).forEach(x=>x.classList.toggle('on',x===t)); ['page','all','phr'].forEach(k=>$('#as-'+k,d).hidden = k!==t.dataset.v); };
+
+/* Handbook (Scene 22) */
+ACT.handbook = (t) => { const i = +(t&&t.dataset.i||0);
+  const hb = HANDBOOK;
+  modal('Handbook', `<div class="tabs" style="padding:0">${hb.map((h,j)=>`<button class="tab ${j===i?'on':''}" data-act="hbTab" data-v="${j}">${h.k}</button>`).join('')}</div>
+   <div style="border-top:2px solid var(--navy);padding-top:12px">${hb.map((h,j)=>`<div class="hbp" data-j="${j}" ${j===i?'':'hidden'}><div class="row" style="margin-bottom:8px"><h3 style="font-size:24px">${h.h}</h3>${listenBtn(h.say)}${listenBtn(h.say,'Slow',true)}</div>${h.b}</div>`).join('')}</div>`,
+   {size:'wide', foot:`<span class="small" style="margin-right:auto">Close the handbook to return to the same place. Your answers stay.</span><button class="btn navy" data-act="closeModal">Close</button>`});
+};
+ACT.hbTab = t => { const d=t.closest('.modal'); $$('.tab',d).forEach(x=>x.classList.toggle('on',x===t)); $$('.hbp',d).forEach(p=>p.hidden = p.dataset.j!==t.dataset.v); };
+
+/* Settings (Scene 24) + restart (Scene 28) */
+ACT.settings = () => { const s=S.settings;
+  modal('Settings', `
+   <div class="switch"><div><b>Background music</b><div class="small">Musik latar</div></div><input type="range" min="0" max="1" step=".05" value="${s.mv}" id="mv" aria-label="Music volume"><button class="tog ${s.music?'on':''}" data-act="setTog" data-k="music" aria-label="Music on or off"></button></div>
+   <div class="switch"><div><b>Sound effects</b><div class="small">Efek suara (klik, benar, belum tepat, cap)</div></div><input type="range" min="0" max="1" step=".05" value="${s.sv}" id="sv" aria-label="Sound effects volume"><button class="tog ${s.sfx?'on':''}" data-act="setTog" data-k="sfx" aria-label="Sound effects on or off"></button></div>
+   <div class="switch"><div><b>Narration (Listen buttons)</b><div class="small">Narasi suara bahasa Inggris dari perangkat</div></div><button class="tog ${s.narr?'on':''}" data-act="setTog" data-k="narr" aria-label="Narration on or off"></button></div>
+   <div class="switch" style="flex-wrap:wrap"><div style="flex:1;min-width:200px"><b>${MENTOR}'s voice</b><div class="small">Pilih suara paling natural di perangkat ini. Suara bertanda ★ biasanya paling natural.</div></div>
+     <select id="vsel" aria-label="Voice" style="max-width:300px;border:2px solid var(--line);border-radius:10px;padding:6px 8px;font-size:15px">${VOICES.length?VOICES.map((v,i)=>`<option value="${esc(v.name)}" ${voice&&v.name===voice.name?'selected':''}>${voiceScore(v)>=50?'★ ':''}${esc(v.name)} (${v.lang})${i===0?' – recommended':''}</option>`).join(''):'<option>No English voice found</option>'}</select></div>
+   <div class="switch"><div><b>Speaking speed</b><div class="small">Kecepatan bicara</div></div><input type="range" min=".75" max="1.15" step=".05" value="${s.rate||1}" id="vrate" aria-label="Speaking speed"><button class="btn ghost sm" data-act="vtest">${ICON.play.replace('<svg','<svg width="16" height="16"')} Test</button></div>
+   <div class="switch"><div><b>Teacher: unlock all missions</b><div class="small">Untuk guru/pendampingan. XP tetap diberikan hanya saat misi diselesaikan.</div></div><button class="tog ${S.teacher?'on':''}" data-act="setTog" data-k="teacher" aria-label="Unlock all missions"></button></div>
+   <div class="row" style="margin-top:14px"><button class="btn ghost sm" data-act="toCover">${ICON.home.replace('<svg','<svg width="18" height="18"')} Back to cover (keeps progress)</button><button class="btn ghost sm" data-act="workText">Download / copy my work</button><span class="spacer"></span><button class="btn red sm" data-act="askReset">Restart game…</button></div>`,
+   {size:'narrow', foot:`<button class="btn navy" data-act="closeModal">Done</button>`,
+    after(d){ $('#mv',d).addEventListener('input',e=>{s.mv=+e.target.value; applyVol(); save(true);}); $('#sv',d).addEventListener('input',e=>{s.sv=+e.target.value; applyVol(); save(true);}); $('#sv',d).addEventListener('change',()=>sfx('correct'));
+    const vs=$('#vsel',d); vs.addEventListener('change',()=>{ s.voice=vs.value; pickVoice(); save(true); ACT.vtest(); });
+    $('#vrate',d).addEventListener('change',e=>{ s.rate=+e.target.value; save(true); ACT.vtest(); }); }});
+ACT.vtest = () => speak("Hi, I'm Ms. Sata, your marketing mentor. First, choose a clear product photo. Then, check it before you post it.");
+};
+ACT.setTog = t => { const k=t.dataset.k; if(k==='teacher'){ S.teacher=!S.teacher; } else S.settings[k]=!S.settings[k];
+  t.classList.toggle('on'); if(k==='music'){ S.settings.music?startMusic():0; } if(k==='narr' && !S.settings.narr){ try{speechSynthesis.cancel()}catch(e){} }
+  applyVol(); save(true); renderHUD(); if(S.cur==='map') rerender(); };
+ACT.toCover = () => { closeModal(); go('cover'); };
+ACT.askReset = () => { closeModal();
+  modal('Restart the game?', `<p class="lead">Restart deletes all saved progress on this device: XP, stamps, answers, drafts, revisions, and reflections.</p><p style="margin-top:8px">Download or copy your work first if you need it for your teacher.</p><p class="small" style="margin-top:8px">Mulai ulang akan menghapus semua progres. Unduh atau salin hasil kerja terlebih dahulu bila perlu.</p>`,
+   {size:'narrow', foot:`<button class="btn ghost" data-act="workText">Download / copy first</button><span class="spacer"></span><button class="btn navy" data-act="closeModal">Cancel</button><button class="btn red" data-act="doReset">Reset</button>`}); };
+ACT.doReset = () => { const keep=S.settings; S=FRESH(); S.settings=keep; UI.place={}; UI.tab={}; try{localStorage.removeItem(KEY)}catch(e){} $$('#layer .mback').forEach(m=>m.remove()); go('cover'); toast('Progress deleted. You can start again.'); };
+/* ================= HELPERS for missions ================= */
+const fbHTML = (ok, msg) => `<div class="fb ${ok===true?'ok':ok===false?'no':'info'}"><span class="ic">${ok===true?'✓':ok===false?'!':'i'}</span><div>${ok===true?'<b>Correct!</b> ':ok===false?'<b>Not yet.</b> ':''}${msg}</div></div>`;
+const MC = {}; UI.mc = {};
+/* cfg: {a, ok, no:[per-option msg] or string, hint, solved, onOk, img:bool, letters} */
+function mcHTML(id, opts, cfg){
+  MC[id]=cfg; const st = UI.mc[id] || (UI.mc[id]={wrong:[], solved:!!cfg.solved, fb:cfg.solved?fbHTML(true,cfg.ok):''});
+  if(cfg.solved && !st.solved){ st.solved=true; st.fb=fbHTML(true,cfg.ok); }
+  return `<div class="opts ${cfg.img||cfg.h?'h':''}">${opts.map((o,i)=>{ const cls = st.solved&&i===cfg.a?'ok':st.wrong.includes(i)?'no':'';
+    return `<button class="opt ${cfg.img?'img':''} ${cls}" style="${cfg.img?'flex:1':''}" data-act="mc" data-q="${id}" data-i="${i}">${cfg.img?`<img src="${IMG(o.src)}" alt="${esc(o.alt)}"><span class="row" style="gap:8px;margin-top:6px"><span class="mk">${cls==='ok'?'✓':cls==='no'?'✗':String.fromCharCode(65+i)}</span>${o.l}</span>`:`<span class="mk">${cls==='ok'?'✓':cls==='no'?'✗':String.fromCharCode(65+i)}</span><span>${o}</span>`}</button>`; }).join('')}</div><div>${st.fb}</div>`;
+}
+ACT.mc = t => {
+  const id=t.dataset.q, i=+t.dataset.i, cfg=MC[id], st=UI.mc[id]; if(!cfg||st.solved) return;
+  if(cfg.onFirst && st.wrong.length===0) cfg.onFirst(i===cfg.a);
+  if(i===cfg.a){ st.solved=true; st.fb=fbHTML(true,cfg.ok); sfx('correct'); rerender(); if(cfg.onOk) cfg.onOk(); }
+  else { if(!st.wrong.includes(i)) st.wrong.push(i); const msg = Array.isArray(cfg.no)? (cfg.no[i]||cfg.hint) : (cfg.no||''); st.fb=fbHTML(false, msg + (cfg.hint&&msg!==cfg.hint?` <br><span class="small">Hint: ${cfg.hint}</span>`:'')); sfx('wrong'); rerender(); }
+};
+function shell(o){
+  return `<div class="bg soft" style="background-image:url(${IMG(o.bg||'03_latar_studio.png')})"></div>
+   ${mentorHTML(o.pose||'05_kak_sata_menjelaskan.png', o.say, o.mopt||{})}
+   <div class="panel main-panel">
+    <div class="panel-h"><span class="tag">${o.id}</span><div style="min-width:0"><h2>${o.title}</h2><div class="small" style="font-weight:700">${(m=>m?(o.title===m.name?m.tag:m.name+' · '+m.tag):'')(MISSIONS.find(x=>x.id===o.id))}</div></div><span class="spacer"></span>${o.right||''}</div>
+    ${o.tabs?`<div class="tabs">${o.tabs.map(t=>`<button class="tab ${t.on?'on':''}" data-act="tab" data-k="${o.tabKey}" data-v="${t.v}">${t.l}${t.done?' <span class="st">✓</span>':''}</button>`).join('')}</div>`:''}
+    <div class="panel-b" ${o.tabs?'style="border-top:2px solid var(--navy)"':''}>${o.body}</div>
+    <div class="panel-f">${o.foot||''}<span class="spacer"></span>${o.footR||''}</div>
+   </div>`;
+}
+function missionDone(id){
+  const i=MISSIONS.findIndex(m=>m.id===id), nx=MISSIONS[i+1];
+  setTimeout(()=>{ sfx('win');
+    modal('Mission complete!', `<div class="row" style="flex-wrap:nowrap;gap:18px"><img src="${IMG('06_kak_sata_apresiasi.png')}" alt="" style="width:150px;flex:none"><div>
+      <p class="lead">Great work! You finished <b>${id} ${MISSIONS[i].name}</b> and earned ${MISSIONS[i].xp} XP.</p>
+      <p style="margin-top:8px">Total: <b>${totalXP()}/600 XP</b> · Level: <b>${level(totalXP())}</b></p>
+      ${nx?`<p style="margin-top:8px">🔓 <b>${nx.id} ${nx.name}</b> is now open.</p>`:''}</div></div>`,
+      {size:'narrow', foot:`<button class="btn ghost" data-act="closeModal">Stay here</button><button class="btn navy" data-act="mdGo" data-to="map">Map</button>${nx?`<button class="btn red" data-act="mdGo" data-to="${nx.id}">Go to ${nx.id} ➜</button>`:`<button class="btn red" data-act="mdGo" data-to="report">Final Report ➜</button>`}`});
+  }, 900);
+}
+ACT.mdGo = t => { closeModal(); go(t.dataset.to); };
+const backMap = `<button class="btn ghost sm" data-act="go" data-to="map">${ICON.map.replace('<svg','<svg width="18" height="18"')} Map</button>`;
+const tabOf = (k, d) => UI.tab[k] || d;
+
+/* ================= M0 Welcome Gate ================= */
+const KKTP = [
+  'I can understand the purpose, information, and order of steps in a procedure text.',
+  'I can analyse the structure, language features, logical order, and safety (K3LH) of a procedure text in a work context.',
+  'I can draft a procedure text with a clear goal and the right order of steps.',
+  'I can create and revise a procedure text with the right structure and language features.'
+];
+const SELF = ['Not yet','With help','On my own'];
+SCREENS.M0 = { loc:'M0 · First Day at SataMart',
+  render(){ const tb=tabOf('m0','learn'); if(tb==='learn' && !S.m0.read){ S.m0.read=true; save(true); }
+    let body='';
+    if(tb==='learn') body = `
+      <div class="card navy"><div class="kicker" style="color:var(--gold)">Learning objective</div><p class="lead" style="font-size:22px">You are able to understand procedure texts and create a procedure text.</p></div>
+      <div class="grid2" style="margin-top:12px">
+        <div class="card"><h3>Success criteria</h3><p class="small">You are successful when:</p><ol class="steps">${KKTP.map(k=>`<li>${k}</li>`).join('')}</ol></div>
+        <div class="card"><h3>Your 4 learning experiences</h3><ol class="steps">
+          <li><b>Identify</b> the purpose, key information, and steps in a procedure text.</li>
+          <li><b>Analyse</b> its structure, instruction words, and logical sequence.</li>
+          <li><b>Follow</b> a procedure to create a product promotion.</li>
+          <li><b>Write, test, and revise</b> clear product-use instructions for a demonstration.</li></ol>
+          <div style="margin-top:8px">${listenBtn('Learning objective: You are able to understand procedure texts and create a procedure text. '+KKTP.join(' '))}</div></div>
+      </div>`;
+    else if(tb==='q') body = `
+      <div class="card"><div class="kicker">Big question</div><div class="row"><h3 style="font-size:26px">How can clear product instructions help customers trust your promotion?</h3>${listenBtn('How can clear product instructions help customers trust your promotion?')}</div>
+        <p class="small" style="margin-top:6px">Write your prediction. You may use English or Bahasa Indonesia. There is no wrong answer. You will compare it with your final reflection in M6.</p>
+        <textarea id="pred" rows="4" placeholder="I think clear instructions help customers because …">${esc(S.m0.pred)}</textarea>
+        <div class="row" style="margin-top:8px"><span class="small">Need ideas? Click to add:</span>
+          ${['customers know how to use the product','customers do not make mistakes','the product looks reliable','customers feel safe'].map(x=>`<button class="chip" style="cursor:pointer;font-size:15px" data-act="predAdd" data-v="${x}">+ ${x}</button>`).join('')}</div></div>`;
+    else body = `<p class="lead">How confident are you now? This is not graded. Choose one for each criterion.</p>
+      <div class="col" style="margin-top:10px">${KKTP.map((k,i)=>`<div class="card" style="padding:10px 14px"><div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0">${i+1}. ${k}</div>
+        <div class="row" style="flex-wrap:nowrap;gap:6px">${SELF.map((s,j)=>`<button class="opt ${S.m0.self[i]===j?'sel':''}" style="padding:6px 10px;font-size:15px" data-act="selfSet" data-i="${i}" data-j="${j}"><span class="mk" style="width:22px;height:22px">${S.m0.self[i]===j?'✓':''}</span>${s}</button>`).join('')}</div></div></div>`).join('')}</div>`;
+    const ready = S.m0.read && S.m0.pred.trim().length>=3 && KKTP.every((k,i)=>S.m0.self[i]!==undefined);
+    return shell({id:'M0', title:'What Will You Learn?', tabKey:'m0', pose:'04_kak_sata_menyambut.png',
+      say:'Welcome! First, read what you will learn. Then answer the big question.',
+      tabs:[{v:'learn',l:'1 · Objective & criteria',on:tb==='learn',done:S.m0.read},{v:'q',l:'2 · Big question',on:tb==='q',done:S.m0.pred.trim().length>=3},{v:'self',l:'3 · Self-check',on:tb==='self',done:KKTP.every((k,i)=>S.m0.self[i]!==undefined)}],
+      body, foot:backMap,
+      footR: isDone('M0') ? `<span class="statusline">✓ Completed</span><button class="btn red" data-act="go" data-to="M1">Go to M1 ➜</button>`
+        : tb!=='self' ? `<button class="btn navy" data-act="tab" data-k="m0" data-v="${tb==='learn'?'q':'self'}">Next ➜</button>`
+        : `<span class="small">${ready?'':'Finish all three parts to complete.'}</span><button class="btn red" data-act="m0Done" ${ready?'':'disabled'}>Complete Mission (+20 XP)</button>`});
+  },
+  after(){ const p=$('#pred'); if(p) p.addEventListener('input',()=>{ S.m0.pred=p.value; clearTimeout(saveT); saveT=setTimeout(()=>{save(true); renderTabsOnly();},600); }); }
+};
+function renderTabsOnly(){ /* keep typing focus: update only footer state */ const btn=$('[data-act="m0Done"]'); if(btn){ btn.disabled = !(S.m0.read && S.m0.pred.trim().length>=3 && KKTP.every((k,i)=>S.m0.self[i]!==undefined)); } }
+ACT.predAdd = t => { S.m0.pred = (S.m0.pred.trim()? S.m0.pred.trim()+' ' : 'I think clear instructions help because ') + t.dataset.v + '.'; save(true); rerender(); };
+ACT.selfSet = t => { S.m0.self[+t.dataset.i]=+t.dataset.j; save(true); rerender(); };
+ACT.m0Done = () => { if(award('M0')) { rerender(); missionDone('M0'); } };
+
+/* ================= M1 Marketing Passport ================= */
+const NOTICE = {
+  promo:[
+    {k:'goal', w:'Goal:', e:'<b>Goal</b> tells the purpose of the procedure: what you want to achieve.'},
+    {k:'mat', w:'You need', e:'<b>Materials</b>: "You need …" lists the things you use.'},
+    {k:'first', w:'First,', e:'<b>Sequence word.</b> "First" shows the first step. Others: next, then, finally.'},
+    {k:'choose', w:'choose', e:'<b>Action verb (imperative).</b> The sentence starts with the base verb: "Choose a clear product photo."'},
+    {k:'check', w:'Check', e:'<b>Check before you post.</b> This step makes sure the photo and information are correct.'},
+    {k:'finally', w:'Finally,', e:'<b>Sequence word</b> for the last step.'}
+  ],
+  guide:[
+    {k:'goal', w:'Goal:', e:'<b>Goal</b>: the purpose. Here, to set up your phone for viewing at a desk.'},
+    {k:'place', w:'place the stand on a flat surface', e:'<b>Verb + object + place.</b> The reader knows what to do, with what, and where.'},
+    {k:'open', w:'open the support', e:'<b>Product part.</b> The support is the part that holds the phone up.'},
+    {k:'holder', w:'in the holder', e:'<b>Clear location.</b> "in the holder" is better than "there".'},
+    {k:'stable', w:'Check that the phone and stand are stable', e:'<b>Safety step.</b> Check before use so the phone does not fall.'},
+    {k:'before', w:'before folding', e:'<b>Before</b> connects two actions: remove the phone first, then fold.'}
+  ]
+};
+function noticeText(card){
+  const items = NOTICE[card]; const seen = S.m1.notice[card]||{};
+  let txt = card==='promo'
+    ? `<p>${PROMO_GOAL}</p><p>${PROMO_MAT}</p><ol class="steps">${PROMO_STEPS.map(s=>`<li>${s.t}</li>`).join('')}</ol>`
+    : `<p>${GUIDE_TEXT[0]}</p><ol class="steps">${GUIDE_TEXT.slice(1).map(s=>`<li>${s}</li>`).join('')}</ol>`;
+  items.forEach(it=>{ txt = txt.replace(it.w, `<span class="hl ${it.k==='goal'?'goal':''} ${seen[it.k]?'seen':''}" tabindex="0" role="button" data-act="notice" data-c="${card}" data-k="${it.k}">${it.w}</span>`); });
+  return txt;
+}
+SCREENS.M1 = { loc:'M1 · Passport to Promotion',
+  render(){
+    const card=tabOf('m1c','promo'), tb=tabOf('m1t','read'); const st={promo:S.awarded.stamp_promo, guide:S.awarded.stamp_guide};
+    if(tb==='read' && !S.m1.read[card]){ S.m1.read[card]=true; save(true); }
+    const title = card==='promo'?'How to Create a Product Promotion':'How to Use a Foldable Phone Stand';
+    let body='';
+    if(tb==='read') body = card==='promo'
+      ? `<div class="row" style="align-items:flex-start;flex-wrap:nowrap;gap:16px"><div style="min-width:0"><p><b>${PROMO_GOAL}</b></p><p style="margin-top:4px">${PROMO_MAT}</p><ol class="steps">${PROMO_STEPS.map(s=>`<li>${s.t}</li>`).join('')}</ol></div></div>`
+      : `<div class="row" style="align-items:flex-start;flex-wrap:nowrap;gap:16px"><div style="min-width:0;flex:1"><p><b>${GUIDE_TEXT[0]}</b></p><ol class="steps">${GUIDE_TEXT.slice(1).map(s=>`<li>${s}</li>`).join('')}</ol></div>
+         <div style="width:260px;flex:none"><div style="position:relative"><img src="${IMG('09_produk_dudukan_terbuka.png')}" alt="Open phone stand with base, support and holder">
+           <span class="pill ready" style="position:absolute;left:2%;top:72%">base</span><span class="pill ready" style="position:absolute;left:48%;top:4%">support</span><span class="pill ready" style="position:absolute;left:0;top:44%">holder</span></div>
+           <div class="row" style="gap:6px;flex-wrap:nowrap"><img src="${IMG('10_produk_dudukan_dengan_ponsel.png')}" alt="Phone in the holder" style="width:50%"><img src="${IMG('11_produk_dudukan_terlipat.png')}" alt="Folded stand" style="width:50%"></div>
+           <p class="small">Simulation product card for this game.</p></div></div>`;
+    else if(tb==='listen'){ const lines = card==='promo'? [PROMO_GOAL, PROMO_MAT, ...PROMO_STEPS.map(s=>s.t)] : GUIDE_TEXT;
+      body = `<div class="row" style="margin-bottom:10px">${listenBtn(lines.join(' '),'Listen to all')}${listenBtn(lines.join(' '),'Slow',true)}<span class="small">Click any line to hear it again.</span></div>
+        <div class="col" style="gap:6px">${lines.map(l=>`<div class="card" style="padding:8px 12px;display:flex;gap:10px;align-items:center">${listenBtn(l,'')}<span>${l}</span></div>`).join('')}</div>`; }
+    else if(tb==='notice'){ const it=NOTICE[card]; const seenN = Object.keys(S.m1.notice[card]||{}).length;
+      body = `<p class="small">Click the yellow words to learn about the goal, structure, and verbs. (${seenN}/${it.length} opened)</p><div class="card" style="margin-top:6px">${noticeText(card)}</div><div id="noticeFb">${UI.noticeMsg||fbHTML(null,'Click a yellow word.')}</div>`; }
+    else { const qc = card==='promo'
+      ? mcHTML('qc_promo', ['So the photo and information are correct.','So the post looks longer.','So we can skip the preview.'], {a:0, solved:st.promo, ok:'We check the content so the photo and information are correct before customers see it.', no:['','A longer post is not the purpose of checking. Look at step 5.','Step 5 says: check AND preview. Look again.'], hint:'Read step 5 again.', onOk:()=>getStamp('promo')})
+      : mcHTML('qc_guide', ['"Put it there."','"Place your phone in the holder."'], {a:1, solved:st.guide, ok:'"Place your phone in the holder" names the object (your phone) and the place (the holder).', no:['"It" and "there" do not say which object or which place.',''], hint:'Which sentence names the object and the place?', onOk:()=>getStamp('guide')});
+      body = `<div class="kicker">Quick Check</div><div class="row" style="margin:4px 0 10px"><h3>${card==='promo'?'Why do we check the content before we post it?':'Which instruction is clearer?'}</h3></div>
+        ${S.m1.read[card]?qc:fbHTML(null,'Read the card first (tab <b>Read</b>), then come back.')}`; }
+    const pass = `<div style="position:relative;width:250px;margin:0 auto">
+       <img src="${IMG('17_paspor_marketing.png')}" alt="Marketing passport with two stamp places" style="width:250px;display:block">
+       ${st.promo?`<img class="${UI.justStamp==='promo'?'stampAnim':''}" src="${IMG('14_cap_promotion.png')}" alt="Promotion stamp" style="position:absolute;width:92px;left:24px;top:36px;transform:rotate(-8deg)">`:''}
+       ${st.guide?`<img class="${UI.justStamp==='guide'?'stampAnim':''}" src="${IMG('15_cap_product_guide.png')}" alt="Product Guide stamp" style="position:absolute;width:92px;right:20px;top:36px;transform:rotate(-8deg)">`:''}
+     </div><p style="text-align:center;font-weight:800;margin-top:4px">Stamps ${stamps()}/2</p>`;
+    UI.justStamp=null;
+    return shell({id:'M1', title:'Passport to Promotion', pose:'05_kak_sata_menjelaskan.png', say:'Explore two example cards. Each Quick Check gives you a stamp.',
+      body:`<div class="row" style="align-items:flex-start;flex-wrap:nowrap;gap:16px">
+        <div style="width:270px;flex:none" class="col">
+          ${pass}
+          <button class="opt ${card==='promo'?'sel':''}" data-act="m1card" data-v="promo"><span class="mk">${st.promo?'✓':'1'}</span><span>Card 1 · Promotion<br><span class="small">How to Create a Product Promotion</span></span></button>
+          <button class="opt ${card==='guide'?'sel':''}" data-act="m1card" data-v="guide"><span class="mk">${st.guide?'✓':'2'}</span><span>Card 2 · Product Guide<br><span class="small">How to Use a Foldable Phone Stand</span></span></button>
+        </div>
+        <div style="flex:1;min-width:0">
+          <h3 style="font-size:24px">${title}</h3>
+          <div class="tabs" style="padding:8px 0 0">${[['read','Read'],['listen','Listen'],['notice','Notice'],['qc','Quick Check']].map(([v,l])=>`<button class="tab ${tb===v?'on':''}" data-act="tab" data-k="m1t" data-v="${v}">${l}</button>`).join('')}</div>
+          <div style="border-top:2px solid var(--navy);padding-top:10px">${body}</div>
+        </div></div>`,
+      foot:backMap,
+      footR: isDone('M1')?`<span class="statusline">✓ Completed · 60/60 XP</span><button class="btn red" data-act="go" data-to="M2">Go to M2 ➜</button>`:`<span class="small">Get both stamps to finish M1.</span>`});
+  }
+};
+ACT.m1card = t => { UI.tab.m1c=t.dataset.v; UI.tab.m1t='read'; UI.noticeMsg=null; rerender(); };
+ACT.notice = t => { const c=t.dataset.c, k=t.dataset.k; (S.m1.notice[c] ||= {})[k]=true; save(true); const it=NOTICE[c].find(x=>x.k===k); UI.noticeMsg = fbHTML(null, it.e); sfx('pick'); rerender(); };
+function getStamp(card){ const key='stamp_'+card; if(S.awarded[key]) return; UI.justStamp=card; sfx('stamp'); award(key); rerender();
+  if(isDone('M1')) missionDone('M1'); else setTimeout(()=>toast('Stamp received! Now open Card '+(card==='promo'?'2 · Product Guide':'1 · Promotion')+'.'),800); }
+
+/* ================= M2 SOP Lab ================= */
+const M2A = {chips:[{v:'goal',l:'Goal'},{v:'mat',l:'Materials'},{v:'steps',l:'Steps'}],
+  slots:[{a:'goal',pre:'<span style="flex:1">"Introduce a product to students."</span>'},{a:'mat',pre:'<span style="flex:1">"A product card, photos, and a caption template."</span>'},{a:'steps',pre:'<span style="flex:1">"First, choose a clear photo. Next, write the product name."</span>'}]};
+const M2B = {chips:[{v:'pilih',l:'memilih'},{v:'tulis',l:'menulis'},{v:'tambah',l:'menambahkan'}],
+  slots:[{a:'pilih',pre:'<b style="width:90px">choose</b>'},{a:'tulis',pre:'<b style="width:90px">write</b>'},{a:'tambah',pre:'<b style="width:90px">add</b>'}]};
+const M2C = {chips:[{v:'post',l:'Post the content'},{v:'check',l:'Check the photo and caption'},{v:'photo',l:'Choose a photo'},{v:'cap',l:'Write the caption'}],
+  slots:[{a:'photo',pre:'<span class="num">1</span>',ph:'Step 1'},{a:'cap',pre:'<span class="num">2</span>',ph:'Step 2'},{a:'check',pre:'<span class="num">3</span>',ph:'Step 3'},{a:'post',pre:'<span class="num">4</span>',ph:'Step 4'}]};
+SCREENS.M2 = { loc:'M2 · SOP Detective Lab',
+  render(){ const tb=tabOf('m2','1'); const T=S.m2.t; let body='';
+    if(tb==='1') body = `
+      <div class="grid2">
+       <div class="card"><h3>A. Label the structure</h3><p class="small">Match each part of "How to Create a Product Promotion".</p>${placeHTML('m2a', M2A.chips, M2A.slots)}</div>
+       <div class="card"><h3>B. Match the action verbs</h3><p class="small">What does each verb mean in Bahasa Indonesia?</p>${placeHTML('m2b', M2B.chips, M2B.slots)}</div>
+      </div>
+      <div class="card" style="margin-top:12px"><h3>C. Complete the instruction: "___ a clear product photo."</h3>
+        ${mcHTML('m2c', ['Choose','Chooses','Choosing'], {a:0, h:true, solved:T[1], ok:'An instruction (imperative) starts with the base verb: <b>Choose</b> a clear product photo.', no:['','"Chooses" is for a statement about someone (She chooses…). Instructions use the base verb.','"Choosing" is not a complete instruction. Use the base verb.']})}</div>
+      <div class="row" style="margin-top:10px"><button class="btn teal" data-act="m2check1">Check table 1</button></div><div id="m2fb1">${UI.m2fb1||''}</div>`;
+    else if(tb==='2') body = `<div class="card"><h3>Put the promotion steps in a logical order</h3><p class="small">Instruction: "Check the content before you post it." ${listenBtn('Check the content before you post it.')}</p>
+        ${placeHTML('m2o', M2C.chips, M2C.slots)}
+        <div class="row" style="margin-top:10px"><button class="btn teal" data-act="m2check2">Check table 2</button></div><div id="m2fb2">${UI.m2fb2||''}</div></div>`;
+    else body = `<div class="grid2">
+        <div class="card"><h3>A. Which photo is better for the catalogue?</h3>${mcHTML('m2p', [{src:'07_produk_tempat_pensil_jelas.png',alt:'Clear photo of a blue pencil case',l:'Photo A'},{src:'08_produk_tempat_pensil_buram.png',alt:'Blurry, cut photo of the pencil case',l:'Photo B'}], {a:0, img:true, solved:T[3]||UI.m2p, ok:'Photo A is clear and shows the whole product and its colour.', no:['','Photo B is blurry and the product is cut off. Customers cannot see it well.'], onOk:()=>{UI.m2p=true;m2t3();}})}</div>
+        <div class="card"><h3>B. Which table is ready for a safe demonstration?</h3>${mcHTML('m2s', [{src:'12_situasi_meja_aman.png',alt:'Dry and tidy table',l:'Table A'},{src:'13_situasi_meja_perlu_dirapikan.png',alt:'Table with a water spill and a cable across it',l:'Table B'}], {a:0, img:true, solved:T[3]||UI.m2s, ok:'Table A is dry and tidy, and no cable crosses the walkway.', no:['','Look again: Table B has a water spill and a cable across the table and floor.'], onOk:()=>{UI.m2s=true;m2t3();}})}</div>
+      </div>
+      <div class="card" style="margin-top:12px"><h3>C. Explain one fix for Table B</h3>
+        ${mcHTML('m2x', ['Record the video faster.','Dry the spill and tidy the cable before recording.','Put the phone closer to the water.'], {a:1, solved:T[3]||UI.m2x, ok:'Dry the spill and tidy the cable first. Then the demonstration is safe.', no:['Speed does not fix the danger. What is on the table and floor?','','Water can damage the phone. Find a safer fix.'], onOk:()=>{UI.m2x=true; m2t3();}})}</div>`;
+    return shell({id:'M2', title:'SOP Detective Lab', tabKey:'m2', say:'Three practice tables. Check your answers and fix them if needed.',
+      tabs:[{v:'1',l:'Table 1 · Structure & language',on:tb==='1',done:T[1]},{v:'2',l:'Table 2 · Logical order',on:tb==='2',done:T[2]},{v:'3',l:'Table 3 · Quality & safety',on:tb==='3',done:T[3]}],
+      body, foot:backMap,
+      footR: isDone('M2')?`<span class="statusline">✓ Completed · 80/80 XP</span><button class="btn red" data-act="go" data-to="M3">Go to M3 ➜</button>`:`<span class="small">Tables done: ${[1,2,3].filter(n=>T[n]).length}/3</span>${tb!=='3'?`<button class="btn navy" data-act="tab" data-k="m2" data-v="${+tb+1}">Next table ➜</button>`:''}`});
+  }
+};
+ACT.m2check1 = () => {
+  if(!placeFull('m2a')||!placeFull('m2b')){ UI.m2fb1=fbHTML(null,'Fill all boxes in A and B first.'); rerender(); return; }
+  const a=placeCheck('m2a',M2A.slots), b=placeCheck('m2b',M2B.slots), c=UI.mc.m2c&&UI.mc.m2c.solved;
+  const ok=a&&b&&c;
+  UI.m2fb1 = ok ? fbHTML(true,'Table 1 is complete. A procedure text has a goal, materials, and steps. Verbs: choose = memilih, write = menulis, add = menambahkan.')
+    : fbHTML(false, [!a?'Check part A: the goal is the purpose; materials are things you need; steps are actions.':'', !b?'Check part B: use the Assistance button if you need the meanings.':'', !c?'Answer part C.':''].filter(Boolean).join(' '));
+  sfx(ok?'correct':'wrong'); if(ok){ S.m2.t[1]=true; save(true); } rerender(); m2maybe();
+};
+ACT.m2check2 = () => {
+  if(!placeFull('m2o')){ UI.m2fb2=fbHTML(null,'Put a card in every step box.'); rerender(); return; }
+  const ok=placeCheck('m2o',M2C.slots);
+  UI.m2fb2 = ok ? fbHTML(true,'You need a photo first, then you write the caption. You check everything before you post it.') : fbHTML(false,'Think: Can you write a caption without a photo? Can you post before you check? Click a wrong card to remove it.');
+  sfx(ok?'correct':'wrong'); if(ok){ S.m2.t[2]=true; save(true); } rerender(); m2maybe();
+};
+function m2t3(){ if(UI.m2p&&UI.m2s&&UI.m2x&&!S.m2.t[3]){ S.m2.t[3]=true; save(true); rerender(); m2maybe(); } }
+function m2maybe(){ if(S.m2.t[1]&&S.m2.t[2]&&S.m2.t[3]&&!S.awarded.M2){ award('M2'); rerender(); missionDone('M2'); } }
+/* ================= M3 Marketing Studio ================= */
+const GAPS = [{pre:'Choose a clear product', a:'photo', post:'.'},{pre:'Highlight a useful', a:'benefit', post:'.'},{pre:'Add the', a:'price', post:'and a call to action.'}];
+UI.gaps = ['','',''];
+function m3maybe(){ const m=S.m3; if(m.learn&&m.mk1done&&m.mk2done&&m.prio&&m.sopdone&&!S.awarded.M3){ award('M3'); rerender(); missionDone('M3'); } }
+function phonePreview(o){
+  return `<div class="preview-phone"><div class="top">SataMart Practice Catalogue</div>
+    <div class="ph">${o.photo?`<img src="${IMG(o.photo)}" alt="Product photo">`:'Photo: missing'}</div>
+    <div class="cap">${o.name?`<div class="nm">${o.name}</div>`:'<div class="miss">Product name: missing</div>'}
+      ${o.benefit?`<div>${o.benefit}</div>`:'<div class="miss">Benefit: missing</div>'}
+      ${o.price?`<div><b>${o.price}</b></div>`:'<div class="miss">Price: missing</div>'}
+      ${o.cta?`<div style="color:var(--red);font-weight:800">${o.cta}</div>`:'<div class="miss">Call to action: missing</div>'}
+      ${o.posted?`<div class="pill done" style="margin-top:6px">✓ Posted (simulation)</div>`:''}</div></div>`;
+}
+const MK1_STEPS = ['Choose photo','Write name','Highlight benefit','Price & call to action','Check & preview','Post'];
+const CHECK5 = [['photo','The photo is clear'],['name','The product name is correct'],['benefit','The benefit is useful and true'],['price','The price is correct'],['cta','There is a call to action']];
+SCREENS.M3 = { loc:'M3 · Content Creator Studio',
+  render(){ const tb=tabOf('m3','learn'), m=S.m3; let body='', say='Brief: create catalogue content for students. Follow the six steps.';
+    if(tb==='learn'){
+      body = `<div class="row" style="margin-bottom:8px"><h3>How to Create a Product Promotion</h3>${listenBtn(MENTOR_AUDIO,'Listen')}${listenBtn(MENTOR_AUDIO,'Slow',true)}<span class="small">The text below is the transcript.</span></div>
+        <div class="grid3">${PROMO_STEPS.map((s,i)=>`<div class="card" style="display:flex;gap:10px;padding:10px"><img class="icon-step" style="width:74px;height:74px" src="${IMG(s.img)}" alt=""><div style="min-width:0"><b>Step ${i+1}</b> ${listenBtn(s.t,'')}<div style="font-size:15px">${s.t}</div></div></div>`).join('')}</div>
+        <div class="card" style="margin-top:12px"><h3>Fill in the gaps</h3><p class="small">Type the word or click a word from the bank. Glossary: benefit = manfaat; call to action = ajakan.</p>
+          <div class="row" style="margin:6px 0">${['price','photo','benefit','name'].map(w=>`<button class="chip" data-act="gapWord" data-v="${w}">${w}</button>`).join('')}</div>
+          ${GAPS.map((g,i)=>`<p style="margin:6px 0">${i+1}. ${g.pre} <input type="text" class="gap" id="gap${i}" value="${esc(m.learn?g.a:UI.gaps[i])}" aria-label="Gap ${i+1}" ${m.learn?'disabled':''}> ${g.post}</p>`).join('')}
+          ${m.learn?fbHTML(true,'photo · benefit · price. You know the six steps.'):`<button class="btn teal sm" data-act="gapCheck">Check</button>`}<div id="gapFb">${UI.gapFb||''}</div></div>`;
+    } else if(tb==='mk1'){
+      const k=m.mk1, st=UI.mk1s ?? 0; say='Make one complete promotion for the Blue Pencil Case.';
+      const doneStep = [!!k.photo, !!k.name, !!k.benefit, !!(k.price&&k.cta), !!k.checked, !!k.posted];
+      let stepBody='';
+      if(st===0) stepBody = `<h3>Step 1 · Choose a clear product photo</h3>`+mcHTML('mk1p',[{src:'07_produk_tempat_pensil_jelas.png',alt:'Clear photo',l:'Photo A'},{src:'08_produk_tempat_pensil_buram.png',alt:'Blurry photo',l:'Photo B'}],{a:0,img:true,solved:!!k.photo,ok:'Photo A shows the correct product and colour clearly.',no:['','Photo B is blurry and cut off.'],onOk:()=>{k.photo='07_produk_tempat_pensil_jelas.png';save(true);rerender();}});
+      if(st===1) stepBody = `<h3>Step 2 · Write the product name</h3><p class="small">Look at the product card.</p>`+mcHTML('mk1n',['Blue Bag','Blue Pencil Case','Pencil Case Red'],{a:1,solved:!!k.name,ok:'The product card says: Blue Pencil Case.',no:['It is not a bag. Check the product card.','','The colour is blue, not red.'],onOk:()=>{k.name='Blue Pencil Case';save(true);rerender();}});
+      if(st===2) stepBody = `<h3>Step 3 · Highlight a useful benefit</h3><p class="small">Use only facts from the product card.</p>`+mcHTML('mk1b',['It is waterproof!','Keep your pens and pencils organised!','Great product!'],{a:1,solved:!!k.benefit,ok:'The card says it holds pens and pencils. This benefit is useful and true.',no:['The product card does not say "waterproof". Do not add facts without a source.','','"Great product!" is too general. It does not say how it helps.'],onOk:()=>{k.benefit='Keep your pens and pencils organised!';save(true);rerender();}});
+      if(st===3) stepBody = `<h3>Step 4 · Add the price and a call to action</h3><div class="grid2"><div><b>Price</b>`+mcHTML('mk1r',['Rp15,000','Rp50,000'],{a:0,solved:!!k.price,ok:'Rp15,000 matches the product card.',no:['','Check the product card: Rp15,000.'],onOk:()=>{k.price='Rp15,000';save(true);rerender();}})+`</div><div><b>Call to action</b> <span class="small">(tells readers what to do next)</span>`+mcHTML('mk1c',['OK.','See it in our school catalogue!'],{a:1,solved:!!k.cta,ok:'It tells readers what to do next.',no:['"OK." does not tell readers what to do.',''],onOk:()=>{k.cta='See it in our school catalogue!';save(true);rerender();}})+`</div></div>`;
+      if(st===4){ const all=doneStep.slice(0,4).every(Boolean); const ch=k.ticks||{};
+        stepBody = `<h3>Step 5 · Check and preview</h3><p class="small">Look at the preview on the right. Tick each part you checked.</p>
+         <div class="col" style="gap:6px;margin-top:6px">${CHECK5.map(([key,l])=>`<button class="opt ${ch[key]?'ok':''}" data-act="mk1tick" data-k="${key}"><span class="mk">${ch[key]?'✓':''}</span>${l}</button>`).join('')}</div>
+         ${!all?fbHTML(null,'Some parts are still missing. Go back to steps 1–4.'):k.checked?fbHTML(true,'Everything is checked. Now post it.'):''}`; }
+      if(st===5) stepBody = `<h3>Step 6 · Post to the practice catalogue</h3><p>This is a local simulation. You do not need a real social media account.</p>
+         ${k.posted?fbHTML(true,'Posted! You followed the procedure from start to finish.'):`<button class="btn red" data-act="mk1post" ${k.checked?'':'disabled'}>Post (simulation)</button>${k.checked?'':'<p class="err" style="margin-top:6px">Finish Step 5 (check and preview) first.</p>'}`}`;
+      body = `<div class="row" style="align-items:flex-start;flex-wrap:nowrap;gap:16px"><div style="flex:1;min-width:0">
+         <div class="card" style="display:flex;gap:12px;align-items:center;padding:8px 12px;background:#FFF8EC"><img src="${IMG('07_produk_tempat_pensil_jelas.png')}" alt="" style="width:70px;border-radius:8px"><div style="font-size:15px"><b>Product card MK001</b>: Blue Pencil Case · holds pens and pencils · Rp15,000<br>Audience: students · Channel: school catalogue (simulation)</div></div>
+         <div class="tabs" style="padding:10px 0 0">${MK1_STEPS.map((l,i)=>`<button class="tab ${st===i?'on':''}" data-act="mk1step" data-v="${i}">${i+1}${doneStep[i]?' ✓':''} ${l}</button>`).join('')}</div>
+         <div style="border-top:2px solid var(--navy);padding-top:10px">${stepBody}</div>
+         <div class="row" style="margin-top:10px">${st>0?`<button class="btn ghost sm" data-act="mk1step" data-v="${st-1}">◀ Back</button>`:''}${st<5?`<button class="btn navy sm" data-act="mk1step" data-v="${st+1}">Next step ▶</button>`:''}</div>
+        </div>${phonePreview({...k})}</div>`;
+    } else if(tb==='mk2'){
+      const k=m.mk2; say='Can students see the product and understand its benefit?';
+      const fixed={photo:!!k.photo, cap:!!k.cap, price:!!k.price, cta:!!k.cta}; const allFix=Object.values(fixed).every(Boolean);
+      const prev = {photo: k.photo?'07_produk_tempat_pensil_jelas.png':'08_produk_tempat_pensil_buram.png', name: k.cap?'Blue Pencil Case':'', benefit: k.cap?'Keep your pens and pencils organised!':'Great product!', price:k.price?'Rp15,000':'', cta:k.cta?'See it in our school catalogue!':'', posted:k.posted};
+      body = `<div class="row" style="align-items:flex-start;flex-wrap:nowrap;gap:16px"><div style="flex:1;min-width:0" class="col">
+        <div class="card" style="background:#FFF8EC;padding:8px 12px;font-size:15px"><b>Draft MK002</b> (same product card as MK001). A team member made this draft. Fix it.</div>
+        <div class="card" style="padding:10px 14px"><b>Content checklist:</b> ${[['Clear photo',fixed.photo],['Clear name & benefit',fixed.cap],['Price',fixed.price],['Call to action',fixed.cta]].map(([l,v])=>`<span class="pill ${v?'done':'lock'}" style="margin:2px">${v?'✓':'✗'} ${l}</span>`).join('')}</div>
+        <div class="grid2">
+          <div><b>1. Photo</b>${mcHTML('mk2p',['Keep the blurry photo','Change to the clear photo'],{a:1,solved:fixed.photo,ok:'Changed. Customers can see the product.',no:['A blurry photo hides the product.',''],onOk:()=>{k.photo=1;save(true);rerender();}})}</div>
+          <div><b>2. Name & benefit</b>${mcHTML('mk2c',['Great product!','Blue Pencil Case. Keep your pens and pencils organised!'],{a:1,solved:fixed.cap,ok:'Now readers know the product and how it helps.',no:['Too general: which product? What is the benefit?',''],onOk:()=>{k.cap=1;save(true);rerender();}})}</div>
+          <div><b>3. Price</b>${mcHTML('mk2r',['Cheap!','Rp15,000'],{a:1,solved:fixed.price,ok:'Add the price so readers know how much it costs.',no:['"Cheap" is not a price. Use the product card.',''],onOk:()=>{k.price=1;save(true);rerender();}})}</div>
+          <div><b>4. Call to action</b>${mcHTML('mk2a',['See it in our school catalogue!','Wow!'],{a:0,solved:fixed.cta,ok:'Readers know what to do next.',no:['','"Wow!" does not tell readers what to do.'],onOk:()=>{k.cta=1;save(true);rerender();}})}</div>
+        </div>
+        <div class="card"><b>5. Explain one fix</b> <span class="small">Use: I changed/added … so/because …</span>
+          <div class="row" style="margin:6px 0">${['I added the price so readers know how much it costs.','I changed the photo because the old one was blurry.'].map(x=>`<button class="chip" style="font-size:14px" data-act="mk2why" data-v="${esc(x)}">+ ${x}</button>`).join('')}</div>
+          <textarea id="mk2why" rows="2" placeholder="I changed … because …">${esc(k.why||'')}</textarea></div>
+        <div class="row">${k.posted?fbHTML(true,'Fixed draft posted. Good adaptation!'):`<button class="btn red" data-act="mk2post" ${allFix?'':'disabled'}>Preview & post</button><span class="small">${allFix?'Write your explanation, then post.':'Fix all four parts first.'}</span>`}</div>
+       </div>${phonePreview(prev)}</div>`;
+    } else {
+      say='It is 09:40. The catalogue goes live at 10:00. What comes first?';
+      const P=[['photo','Choose a photo',5,1],['cap','Complete the caption',10,1],['post','Check, preview, and post',5,1],['deco','Add extra decoration',8,0],['video','Make a new video',25,0]];
+      const sel=UI.prio||(UI.prio=m.prio?{photo:1,cap:1,post:1}:{}); const tot=P.reduce((a,p)=>a+(sel[p[0]]?p[2]:0),0);
+      body = `<div class="grid2"><div class="card"><div class="row"><span class="timer">09:40</span><b>Catalogue goes live at 10:00 → 20 minutes</b></div>
+          <p class="small" style="margin-top:6px">Choose the tasks to do before 10:00. Time is simulated.</p>
+          <div class="col" style="gap:6px;margin-top:6px">${P.map(p=>`<button class="opt ${sel[p[0]]?'sel':''}" data-act="prioTog" data-k="${p[0]}" ${m.prio?'disabled':''}><span class="mk">${sel[p[0]]?'✓':''}</span><span style="flex:1">${p[1]}</span><b>${p[2]} min</b></button>`).join('')}</div>
+          <p style="margin-top:8px;font-weight:800">Total: <span style="color:${tot>20?'var(--warn)':'var(--navy)'}">${tot} / 20 minutes</span></p>
+          ${m.prio?fbHTML(true,'Photo → caption → check, preview, post fits 20 minutes. Postpone the decoration and the new video. You still check before posting.'):`<button class="btn teal sm" data-act="prioCheck">Check my plan</button>`}<div>${UI.prioFb||''}</div>
+          ${m.prio?`<div style="margin-top:10px"><b>Why do we postpone the decoration and the video?</b>${mcHTML('prioWhy',['They are not needed for a clear, correct post before 10:00.','Because videos are never useful.'],{a:0,solved:!!m.prioWhy,ok:'Right. We do the essential steps first.',no:['','Videos can be useful later. The reason is time and priority.'],onOk:()=>{m.prioWhy=1;save(true);rerender();m3maybe();}})}</div>`:''}</div>
+        <div class="card"><h3>Write a mini SOP (3–4 steps)</h3><p class="small">How to prepare a promotion before a deadline. Start each step with a verb.</p>
+          ${['First,','Next,','Then,','Finally,'].map((w,i)=>`<div class="row" style="flex-wrap:nowrap;margin:6px 0"><b style="width:66px">${w}</b><input type="text" id="sop${i}" value="${esc(m.sop[i])}" placeholder="${['choose a clear photo.','write the caption.','check and preview the content.','post it.'][i]}" aria-label="Step ${i+1}"></div>`).join('')}
+          <button class="btn teal sm" data-act="sopSave">Save mini SOP</button><div>${UI.sopFb||(m.sopdone?fbHTML(true,'Mini SOP saved. Your teacher will read it.'):'')}</div></div></div>`;
+    }
+    const tabs=[{v:'learn',l:'1 · Learn the SOP',done:m.learn},{v:'mk1',l:'2 · MK001 Create',done:m.mk1done},{v:'mk2',l:'3 · MK002 Fix',done:m.mk2done},{v:'prio',l:'4 · Priority & mini SOP',done:m.prio&&m.sopdone&&m.prioWhy}].map(t=>({...t,on:t.v===tb}));
+    return shell({id:'M3', title:'Content Creator Studio', tabKey:'m3', tabs, say, body, foot:backMap,
+      footR: isDone('M3')?`<span class="statusline">✓ Completed · 120/120 XP</span><button class="btn red" data-act="go" data-to="M4">Go to M4 ➜</button>`:`<span class="small">Parts done: ${tabs.filter(t=>t.done).length}/4</span>`});
+  },
+  after(){ GAPS.forEach((g,i)=>{ const el=$('#gap'+i); if(el) el.addEventListener('input',()=>UI.gaps[i]=el.value); });
+    const w=$('#mk2why'); if(w) w.addEventListener('input',()=>{ S.m3.mk2.why=w.value; clearTimeout(saveT); saveT=setTimeout(()=>save(true),600); });
+    [0,1,2,3].forEach(i=>{ const el=$('#sop'+i); if(el) el.addEventListener('input',()=>{ S.m3.sop[i]=el.value; clearTimeout(saveT); saveT=setTimeout(()=>save(true),600); }); }); }
+};
+ACT.gapWord = t => { const i=UI.gaps.findIndex(v=>!v.trim()); if(i<0) return toast('All gaps are full. Edit a gap if you want to change it.'); UI.gaps[i]=t.dataset.v; rerender(); };
+ACT.gapCheck = () => { const res=GAPS.map((g,i)=>UI.gaps[i].trim().toLowerCase()===g.a); const ok=res.every(Boolean);
+  if(ok){ S.m3.learn=true; save(true); UI.gapFb=''; sfx('correct'); rerender(); m3maybe(); }
+  else { UI.gapFb=fbHTML(false,'Check gap '+res.map((r,i)=>r?null:i+1).filter(Boolean).join(' and ')+'. Listen to the steps again. Words: photo, benefit, price.'); sfx('wrong'); rerender(); } };
+ACT.mk1step = t => { UI.mk1s=+t.dataset.v; rerender(); };
+ACT.mk1tick = t => { const k=S.m3.mk1; k.ticks ||= {}; const key=t.dataset.k; const have={photo:k.photo,name:k.name,benefit:k.benefit,price:k.price,cta:k.cta};
+  if(!have[key]){ sfx('wrong'); toast('This part is missing in the preview. Go back and add it first.'); return; }
+  k.ticks[key]=!k.ticks[key]; k.checked = CHECK5.every(([x])=>k.ticks[x]); sfx(k.checked?'correct':'pick'); save(true); rerender(); };
+ACT.mk1post = () => { const k=S.m3.mk1; k.posted=true; S.m3.mk1done=true; sfx('post'); save(true); rerender(); toast('Posted to the SataMart practice catalogue (simulation).'); m3maybe(); };
+ACT.mk2why = t => { S.m3.mk2.why=t.dataset.v; save(true); rerender(); };
+ACT.mk2post = () => { const k=S.m3.mk2; if((k.why||'').trim().split(/\s+/).length<4){ sfx('wrong'); toast('Explain one fix first (at least 4 words). Example: I added the price so readers know how much it costs.'); return; }
+  k.posted=true; S.m3.mk2done=true; sfx('post'); save(true); rerender(); m3maybe(); };
+ACT.prioTog = t => { const k=t.dataset.k; UI.prio[k]=!UI.prio[k]; UI.prioFb=''; sfx('pick'); rerender(); };
+ACT.prioCheck = () => { const s=UI.prio; const ok = s.photo&&s.cap&&s.post&&!s.deco&&!s.video;
+  if(ok){ S.m3.prio=true; UI.prioFb=''; sfx('correct'); save(true); rerender(); m3maybe(); }
+  else { const tot=(s.photo?5:0)+(s.cap?10:0)+(s.post?5:0)+(s.deco?8:0)+(s.video?25:0);
+    UI.prioFb=fbHTML(false, tot>20?'Your plan takes '+tot+' minutes. That is more than 20. What can wait until later?': !s.post?'Do not skip checking! Content must be checked and previewed before posting.':'Your post needs a photo and a caption. Which tasks are essential?'); sfx('wrong'); rerender(); } };
+ACT.sopSave = () => { const filled=S.m3.sop.filter(x=>x.trim().split(/\s+/).filter(Boolean).length>=2).length;
+  if(filled<3){ UI.sopFb=fbHTML(false,'Write at least 3 steps, each with at least 2 words. Start with a verb, for example "choose a clear photo".'); sfx('wrong'); rerender(); return; }
+  S.m3.sopdone=true; UI.sopFb=fbHTML(true,'Mini SOP saved. Your teacher will read it.'); save(); rerender(); m3maybe(); };
+/* prio completion also needs the reason */
+const _m3maybe = m3maybe;
+m3maybe = function(){ if(S.m3.prio && !S.m3.prioWhy) return; _m3maybe(); };
+
+/* ================= M4 SataMart Rush ================= */
+UI.m4 = {stage:'mode', c:0, run:0, t0:0, left:120};
+const RUSH = [
+  {title:'Case 1 · Imperatives for marketing', understand:'A new team member is writing a promotion SOP. Complete the instruction: "___ a clear product photo."'},
+  {title:'Case 2 · Order of promotion steps', understand:'A draft SOP says: "Post the content → Check the content → Create the content." Fix the order.'},
+  {title:'Case 3 · Clear demonstration instructions', understand:'A customer is watching a phone stand demonstration. Which instruction is clearer?'}
+];
+const R2 = {chips:[{v:'post',l:'Post'},{v:'check',l:'Check'},{v:'create',l:'Create'}], slots:[{a:'create',pre:'<span class="num">1</span>',ph:'First'},{a:'check',pre:'<span class="num">2</span>',ph:'Then'},{a:'post',pre:'<span class="num">3</span>',ph:'Finally'}]};
+function rushRes(c){ return (S.m4.res[c] ||= {first:null, tries:0, fixed:false, why:false}); }
+SCREENS.M4 = { loc:'M4 · Rush Hour Challenge',
+  render(){ const R=UI.m4; let body='', footR='';
+    if(R.stage==='mode'){
+      body = `<p class="lead">Three quick cases. Choose your mode. Both modes give the same XP.</p>
+       <div class="grid2" style="margin-top:12px">
+        <button class="opt" style="flex-direction:column;align-items:flex-start;padding:16px" data-act="rushMode" data-v="practice"><span class="row"><span class="mk">P</span><h3>Practice Mode</h3></span><span>No timer. Take your time.</span></button>
+        <button class="opt" style="flex-direction:column;align-items:flex-start;padding:16px" data-act="rushMode" data-v="challenge"><span class="row"><span class="mk">C</span><h3>Challenge Mode</h3></span><span>A 2-minute timer. When time is up, you can still read, answer, and fix.</span></button>
+       </div>
+       <div class="card" style="margin-top:12px"><h3>Rules</h3><ol class="steps"><li><b>Understand</b> the case.</li><li><b>Decide</b>: choose or order the answer.</li><li><b>Explain</b>: choose the reason.</li></ol><p class="small">Wrong answers never reduce XP. There is no public leaderboard. Compete with your own result.</p>
+       <p style="margin-top:6px">${RUSH.map(r=>`<span class="pill prog" style="margin:2px">${r.title}</span>`).join('')}</p></div>`;
+    } else if(R.stage==='play'){
+      const c=R.c, r=rushRes(c), id=`r${R.run}c${c}`; let dec='';
+      if(c===0) dec = mcHTML(id,['Choose','Chooses','Choosing'],{a:0,h:true,ok:'Base verb for an instruction.',no:['','Not "Chooses": instructions do not add -s.','Not "Choosing": an instruction starts with the base verb.'],hint:'Instructions start with the base verb.',onFirst:x=>{r.first=x;},onOk:()=>{r.fixed=true;save(true);rerender();}});
+      if(c===1) dec = placeHTML(id, R2.chips, R2.slots) + (r.fixed?fbHTML(true,'Create → Check → Post.'):`<button class="btn teal sm" data-act="rushOrder" data-id="${id}">Check order</button>`)+`<div>${UI.rushFb||''}</div>`;
+      if(c===2) dec = mcHTML(id,['"Put it there."','"Place your phone in the holder."'],{a:1,ok:'The second instruction is clear.',no:['Which object? Which place? The reader has to guess.',''],hint:'Look for the object and the place.',onFirst:x=>{r.first=x;},onOk:()=>{r.fixed=true;save(true);rerender();}});
+      const whyO = [['Instructions use the base verb.','"Choosing" sounds more polite.','"Chooses" is for many people.'],['Content must be made, then checked, then posted.','Posting first is faster.','Checking is not important.'],['It names the action, the object, and the place.','It is shorter.','It uses "there".']][c];
+      const why = r.fixed ? `<div class="card" style="margin-top:10px"><b>Explain:</b> Why?`+mcHTML(id+'w', whyO, {a:0, solved:r.why, ok:'Good explanation.', no:['','Think about the rule, not about style.','Look at your answer again.'], onOk:()=>{r.why=true;save(true);rerender();}})+`</div>` : '';
+      body = `<div class="row" style="justify-content:space-between"><span class="pill prog">Case ${c+1}/3</span>${S.m4.mode==='challenge'?`<span class="timer" id="rtimer">${fmtT(R.left)}</span>`:'<span class="pill ready">Practice Mode · no timer</span>'}</div>
+        <h3 style="margin-top:8px;font-size:24px">${RUSH[c].title}</h3>
+        <div class="card" style="margin-top:8px"><span class="kicker">1 · Understand</span><p>${RUSH[c].understand}</p>${c===2?`<img src="${IMG('10_produk_dudukan_dengan_ponsel.png')}" alt="Phone in the stand holder" style="width:170px">`:''}</div>
+        <div class="card" style="margin-top:8px"><span class="kicker">2 · Decide</span>${dec}</div>${why}
+        ${R.timeUp?fbHTML(null,'Time is up. You can still finish and fix your answers.'):''}`;
+      footR = r.why ? `<button class="btn red" data-act="rushNext">${c<2?'Next case ▶':'See results ▶'}</button>` : `<span class="small">Decide and explain to continue.</span>`;
+    } else {
+      body = `<div class="row" style="flex-wrap:nowrap;gap:16px;align-items:flex-start"><div style="flex:1;min-width:0"><h3>Rush results</h3>
+        <table class="t" style="margin-top:8px"><thead><tr><th>Case</th><th>First try</th><th>Attempts</th><th>After fixing</th><th>Explained</th></tr></thead><tbody>
+        ${RUSH.map((x,i)=>{const r=rushRes(i); return `<tr><td>${x.title}</td><td>${r.first?'✓ Correct':'↻ Not yet'}</td><td>${r.tries||1}</td><td>${r.fixed?'✓ Correct':'—'}</td><td>${r.why?'✓':'—'}</td></tr>`;}).join('')}</tbody></table>
+        ${S.m4.mode==='challenge'?`<p style="margin-top:8px">Time used: <b>${fmtT(Math.min(999,Math.round((S.m4.time||0))))}</b></p>`:''}
+        <div class="card" style="margin-top:10px"><b>Key ideas</b><ul style="margin:4px 0;padding-left:20px"><li>Instructions start with a base verb: <i>Choose</i>.</li><li>Create → Check → Post.</li><li>Clear instructions name the object and the place.</li></ul></div></div>
+        <img src="${IMG('06_kak_sata_apresiasi.png')}" alt="" style="width:150px"></div>`;
+      footR = `<button class="btn ghost" data-act="rushAgain">Practise again (no extra XP)</button>${isDone('M4')?`<button class="btn red" data-act="go" data-to="M5">Go to M5 ➜</button>`:''}`;
+    }
+    return shell({id:'M4', title:'Rush Hour Challenge', bg:'01_latar_toko.png', say: R.stage==='play'?'Understand, decide, then explain.':'Ready for a quick challenge? Mistakes are chances to improve.', body, foot:backMap, footR: isDone('M4')&&R.stage!=='done'?`<span class="statusline">✓ Completed · 60/60 XP</span>${footR}`:footR});
+  }
+};
+const fmtT = s => `${Math.floor(s/60)}:${String(Math.max(0,s)%60).padStart(2,'0')}`;
+SCREENS.M4.after = () => { if(UI.m4.stage==='play' && S.m4.mode==='challenge' && !UI.m4.timeUp) startRushTimer(); };
+ACT.rushMode = t => { S.m4.mode=t.dataset.v; S.m4.res={}; const R=UI.m4; R.stage='play'; R.c=0; R.run++; R.left=120; R.timeUp=false; R.t0=Date.now(); UI.rushFb=''; save(true); rerender(); };
+function startRushTimer(){ clearInterval(UI.timer); if(S.m4.mode!=='challenge') return; const R=UI.m4;
+  UI.timer=setInterval(()=>{ R.left--; const el=$('#rtimer'); if(el) el.textContent=fmtT(R.left); if(R.left<=10&&R.left>0) sfx('tick'); if(R.left<=0){ clearInterval(UI.timer); R.timeUp=true; R.left=0; rerender(); } },1000); }
+ACT.rushOrder = t => { const id=t.dataset.id, r=rushRes(1); if(!placeFull(id)){ UI.rushFb=fbHTML(null,'Put a word in every box.'); rerender(); return; }
+  const ok=placeCheck(id,R2.slots); if(r.first===null) r.first=ok; r.tries=(r.tries||0)+1;
+  if(ok){ r.fixed=true; UI.rushFb=''; sfx('correct'); } else { UI.rushFb=fbHTML(false,'Hint: you cannot check something before you create it. Click a wrong word to remove it.'); sfx('wrong'); }
+  save(true); rerender(); };
+ACT.rushNext = () => { const R=UI.m4; const st=UI.mc[`r${R.run}c${R.c}`]; if(st&&R.c!==1){ rushRes(R.c).tries = st.wrong.length+1; }
+  if(R.c<2){ R.c++; UI.rushFb=''; rerender(); return; }
+  clearInterval(UI.timer); S.m4.time=Math.round((Date.now()-R.t0)/1000); R.stage='done'; S.m4.done=true; save(true);
+  if(!S.awarded.M4){ award('M4'); rerender(); missionDone('M4'); } else { sfx('win'); rerender(); } };
+ACT.rushAgain = () => { UI.m4.stage='mode'; rerender(); };
+/* ================= M5 Final Boss ================= */
+const PLAN_F = [
+  ['name','Product name','Foldable Phone Stand',1],
+  ['user','Intended user','e.g. students who watch online lessons at a desk',1],
+  ['goal','Goal','e.g. This guide helps you set up your phone for viewing at a desk.',1],
+  ['source','Source of information','e.g. SataMart product card / the product manual / label checked by my teacher',1],
+  ['tools','Tools or materials (if needed)','e.g. a phone, a flat desk',0],
+  ['steps','Order of actions (short notes)','e.g. place stand → open support → place phone → check stable → remove phone → fold',1],
+  ['care','Care or warnings (only if the source says so)','e.g. Remove the phone before folding.',0]
+];
+const PLAN_ERR = {name:'Write the product name.', user:'Who will use this guide? Write the intended user.', goal:'Write the goal: what will the reader be able to do?', source:'Where does your information come from? Write the source.', steps:'Write the order of actions (at least 3 actions).'};
+const A1_FRAME = 'How to Use ____\n\nThis guide helps you ____.\n\nYou need: ____\n\nFirst, ____.\nNext, ____.\nThen, ____.\nFinally, ____.\n\nCare: ____';
+const WORDHELP = [['place','meletakkan'],['open','membuka'],['unfold','membuka lipatan'],['adjust','menyesuaikan'],['check','memeriksa'],['remove','melepas'],['fold','melipat'],['store','menyimpan'],['press','menekan'],['turn on','menyalakan'],['First,','Pertama,'],['Next,','Selanjutnya,'],['Then,','Kemudian,'],['After that,','Setelah itu,'],['Before','Sebelum'],['Finally,','Terakhir,'],['on a flat surface','di permukaan datar'],['in the holder','di penahan'],['Do not','Jangan']];
+const planOK = () => ['name','user','goal','source','steps'].every(k=>(S.m5.plan[k]||'').trim().length>=3);
+const words = t => (t||'').trim().split(/\s+/).filter(Boolean).length;
+function draftChecks(t){ const lines=(t||'').split('\n').map(l=>l.trim()).filter(Boolean);
+  const stepN = lines.filter(l=>/^(first|next|then|after|before|finally|second|third|\d+[.)])/i.test(l)).length;
+  return [
+    ['Title starts with "How to"', /how to/i.test(lines[0]||'')],
+    ['Goal sentence ("This guide helps you …" or "Goal:")', /(helps you|goal)/i.test(t)],
+    ['At least 4 steps', stepN>=4 || (t.match(/[.!?]/g)||[]).length>=6],
+    ['Sequence words (first … finally)', /\bfirst\b/i.test(t) && /\bfinally\b/i.test(t)],
+    ['No empty blanks (____)', !/__/.test(t) && words(t)>=25]
+  ]; }
+function m5maybe(){ if(planOK() && S.m5.saved && draftChecks(S.m5.draft).every(c=>c[1]) && !S.awarded.M5){ award('M5'); rerender(); missionDone('M5'); } }
+SCREENS.M5 = { loc:'M5 · Boss Level: Guide Maker',
+  render(){ const tb=tabOf('m5','brief'), m=S.m5; let body='';
+    if(tb==='brief') body = `<div class="grid2">
+       <div class="col"><div class="card" style="background:#EEF2FF"><div class="kicker">Customer message</div><p class="lead" style="font-size:24px">💬 "I saw the phone stand in your catalogue. <b>How do I use it?</b>" ${listenBtn('I saw the phone stand in your catalogue. How do I use it?')}</p></div>
+        <div class="card"><h3>Your task</h3><p>Write a <b>procedure text</b>: how to use a product. The team will use it for a product demonstration and as a guide card in the promotion.</p>
+         <p style="margin-top:6px"><b>Choose your product:</b></p>
+         <div class="col" style="gap:6px;margin-top:4px">
+          <button class="opt ${m.product==='stand'?'sel':''}" data-act="m5prod" data-v="stand"><span class="mk">${m.product==='stand'?'✓':''}</span>Foldable Phone Stand (simulation product card)</button>
+          <button class="opt ${m.product==='own'?'sel':''}" data-act="m5prod" data-v="own"><span class="mk">${m.product==='own'?'✓':''}</span>My own product (use its manual or label, checked by your teacher)</button></div>
+          ${m.product==='own'?`<input type="text" id="ownName" style="margin-top:8px" placeholder="Product name, e.g. Reusable Water Bottle" value="${esc(m.own)}">`:''}</div></div>
+       <div class="card"><h3>Product card: Foldable Phone Stand</h3>
+         <div style="position:relative"><img src="${IMG('09_produk_dudukan_terbuka.png')}" alt="Open stand with labels" style="width:100%">
+          <span class="pill ready" style="position:absolute;left:6%;top:72%">base</span><span class="pill ready" style="position:absolute;left:46%;top:8%">support</span><span class="pill ready" style="position:absolute;left:3%;top:45%">holder</span></div>
+         <div class="row" style="flex-wrap:nowrap;gap:6px"><figure style="margin:0;flex:1"><img src="${IMG('10_produk_dudukan_dengan_ponsel.png')}" alt="Phone in the holder"><figcaption class="small">In use</figcaption></figure><figure style="margin:0;flex:1"><img src="${IMG('11_produk_dudukan_terlipat.png')}" alt="Folded stand"><figcaption class="small">Folded for storage</figcaption></figure></div>
+         <p class="small" style="margin-top:4px"><b>Facts:</b> parts: base, support, holder · use on a flat surface · check that it is stable · remove the phone before folding. No other features are given (for example, it does not say "waterproof").</p></div></div>
+       ${fbHTML(null,'Use only information from the product card, manual, or label. Do not add features, capacity, or warnings that the source does not support.')}`;
+    else if(tb==='plan') body = `<p class="small">Fill in the planner. Fields with * are required. Your teacher checks the content.</p>
+       <div class="grid2" style="margin-top:8px">${PLAN_F.map(([k,l,ph,req])=>`<div class="${k==='steps'||k==='goal'?'':''}"><label for="pl_${k}"><b>${l}${req?' *':''}</b></label>
+         ${k==='steps'?`<textarea id="pl_${k}" rows="3" placeholder="${esc(ph)}">${esc(m.plan[k])}</textarea>`:`<input type="text" id="pl_${k}" placeholder="${esc(ph)}" value="${esc(m.plan[k])}">`}
+         <div class="err" id="er_${k}">${UI.planCheck&&req&&(m.plan[k]||'').trim().length<3?PLAN_ERR[k]:''}</div></div>`).join('')}</div>
+       <div class="row" style="margin-top:6px"><button class="btn teal sm" data-act="planCheck">Check my planner</button><span>${UI.planCheck?(planOK()?'<span class="statusline">✓ Planner complete</span>':'<span class="err">Some required fields are empty.</span>'):''}</span></div>`;
+    else { const ch=draftChecks(m.draft);
+      body = `<div class="row" style="align-items:flex-start;flex-wrap:nowrap;gap:14px"><div style="flex:1;min-width:0">
+         <div class="row" style="margin-bottom:6px"><button class="btn ghost sm" data-act="a1frame">Insert A1 sentence frame</button><button class="btn ghost sm" data-act="draftPreview">Preview</button><button class="btn teal sm" data-act="draftSave">Save draft</button>
+          <span class="small">${m.saved?'✓ Draft saved · not graded yet':'Not saved yet'}</span></div>
+         <textarea id="draft" rows="13" placeholder="How to Use a Foldable Phone Stand&#10;&#10;This guide helps you …&#10;&#10;First, …">${esc(m.draft)}</textarea>
+         <p class="small">Target: about 5–8 steps. A1/A2: use the frame. B1+: add one condition (e.g. "If the phone is heavy, …"). Words: <b id="wc">${words(m.draft)}</b></p></div>
+        <div style="width:270px;flex:none" class="col">
+         <div class="card" style="padding:10px"><b>Word Help</b> <span class="small">click to insert</span><div class="row" style="gap:5px;margin-top:6px">${WORDHELP.map(w=>`<button class="chip" style="padding:3px 8px;font-size:14px" title="${w[1]}" data-act="insWord" data-v="${esc(w[0])}">${w[0]}</button>`).join('')}</div></div>
+         <div class="card" style="padding:10px"><b>Completeness check</b><div class="small">Checks only if parts are there. Your teacher checks quality.</div>
+          <div id="dchk">${ch.map(c=>`<div style="font-size:14px">${c[1]?'✓':'○'} ${c[0]}</div>`).join('')}</div></div></div></div>`; }
+    const tabs=[{v:'brief',l:'1 · Product brief',done:true},{v:'plan',l:'2 · Planner',done:planOK()},{v:'draft',l:'3 · Draft',done:m.saved&&draftChecks(m.draft).every(c=>c[1])}].map(t=>({...t,on:t.v===tb}));
+    return shell({id:'M5', title:'Boss Level: Guide Maker', tabKey:'m5', tabs, pose:'05_kak_sata_menjelaskan.png', say:'Create clear product instructions for your demonstration.', body, foot:backMap,
+      footR: isDone('M5')?`<span class="statusline">✓ Completed · 130/130 XP</span><button class="btn red" data-act="go" data-to="M6">Go to M6 ➜</button>`: tb!=='draft'?`<button class="btn navy" data-act="tab" data-k="m5" data-v="${tb==='brief'?'plan':'draft'}">Next ➜</button>`:`<span class="small">Planner + saved draft = complete</span>`});
+  },
+  after(){ const m=S.m5;
+    PLAN_F.forEach(([k])=>{ const el=$('#pl_'+k); if(el) el.addEventListener('input',()=>{ m.plan[k]=el.value; const er=$('#er_'+k); if(er&&el.value.trim().length>=3) er.textContent=''; clearTimeout(saveT); saveT=setTimeout(()=>save(true),600); }); });
+    const o=$('#ownName'); if(o) o.addEventListener('input',()=>{ m.own=o.value; m.plan.name=o.value; save(true); });
+    const d=$('#draft'); if(d) d.addEventListener('input',()=>{ m.draft=d.value; m.saved=false; $('#wc').textContent=words(d.value); $('#dchk').innerHTML=draftChecks(d.value).map(c=>`<div style="font-size:14px">${c[1]?'✓':'○'} ${c[0]}</div>`).join(''); clearTimeout(saveT); saveT=setTimeout(()=>save(true),800); });
+  }
+};
+ACT.m5prod = t => { S.m5.product=t.dataset.v; S.m5.plan.name = t.dataset.v==='stand'?'Foldable Phone Stand':S.m5.own; save(true); rerender(); };
+ACT.planCheck = () => { UI.planCheck=true; sfx(planOK()?'correct':'wrong'); rerender(); m5maybe(); };
+ACT.a1frame = () => { const d=$('#draft'); const name=S.m5.plan.name||'____'; const f=A1_FRAME.replace('How to Use ____','How to Use '+(name==='____'?'____':'a '+name));
+  if(d.value.trim() && !d.value.includes('____')) d.value += '\n\n'+f; else d.value=f; d.dispatchEvent(new Event('input')); d.focus(); };
+ACT.insWord = t => { const d=$('#draft'); const v=t.dataset.v; const s=d.selectionStart??d.value.length, e=d.selectionEnd??s;
+  const bl = d.value.indexOf('____'); if(bl>-1 && s===e && (s===0||s===d.value.length) ){ d.value=d.value.slice(0,bl)+v+d.value.slice(bl+4); }
+  else { const pre=d.value.slice(0,s); const sp = pre && !/\s$/.test(pre) ? ' ' : ''; d.value = pre+sp+v+' '+d.value.slice(e); d.selectionStart=d.selectionEnd=s+sp.length+v.length+1; }
+  d.dispatchEvent(new Event('input')); d.focus(); sfx('pick'); };
+function readerHTML(t){ const lines=(t||'').split('\n'); return `<div class="reader">${lines.map((l,i)=>i===0&&l.trim()?`<h3 style="font-size:26px;margin-bottom:6px">${esc(l)}</h3>`:esc(l)).join('\n')}</div>`; }
+ACT.draftPreview = () => modal('Preview', readerHTML(S.m5.draft) + fbHTML(null,'Preview shows how your guide looks. It does not mean the text is correct. Your teacher and a test reader will check it.'), {foot:`<button class="btn navy" data-act="closeModal">Back to editing</button>`});
+ACT.draftSave = () => { const ch=draftChecks(S.m5.draft); if(!S.m5.draft.trim()){ sfx('wrong'); toast('Your draft is empty. Write your guide first.'); return; }
+  S.m5.saved=true; const ok=save(); rerender();
+  const miss=ch.filter(c=>!c[1]).map(c=>c[0]);
+  if(!ok) toast('Save failed on this device. Copy your text to keep it safe.');
+  else if(miss.length) toast('Draft saved. Still missing: '+miss.join('; ')+'.');
+  else toast('Draft saved. Status: waiting for test and teacher feedback.');
+  if(!planOK()) setTimeout(()=>toast('Also complete the required planner fields (tab 2).'),3300);
+  m5maybe(); };
+
+/* ================= M6 Test, Revise & Reflect ================= */
+const TEST5 = ['The goal is clear.','Actions and objects are specific.','The steps are complete and in a logical order.','The information matches the product.','The product is used safely.'];
+function m6maybe(){ const m=S.m6; if(m.testDone&&m.revDone&&QUIZ.every((q,i)=>m.quiz.now[i])&&m.reflDone&&!S.awarded.M6){ award('M6'); rerender(); missionDone('M6'); } }
+SCREENS.M6 = { loc:'M6 · Test Drive & Level Up',
+  render(){ const tb=tabOf('m6','test'), m=S.m6; let body=''; const draft=S.m5.draft;
+    if(!draft.trim()) body = fbHTML(null,'Your M5 draft is empty. Go to M5 and save your draft first.') + `<button class="btn red" data-act="go" data-to="M5" style="margin-top:10px">Go to M5</button>`;
+    else if(tb==='test') body = `<div class="row" style="align-items:flex-start;flex-wrap:nowrap;gap:14px"><div style="flex:1;min-width:0"><div class="kicker">Reader mode</div>${readerHTML(draft)}</div>
+       <div style="width:360px;flex:none" class="col">
+        <div class="row" style="gap:6px"><button class="opt ${m.test.who==='friend'?'sel':''}" data-act="testWho" data-v="friend" style="flex:1;padding:6px 10px"><span class="mk">${m.test.who==='friend'?'✓':''}</span>Test with a friend</button><button class="opt ${m.test.who==='self'?'sel':''}" data-act="testWho" data-v="self" style="flex:1;padding:6px 10px"><span class="mk">${m.test.who==='self'?'✓':''}</span>Self-check</button></div>
+        <p class="small">${m.test.who==='friend'?'Your friend follows or acts out the guide. No names or photos are needed.':'Read your guide as if you are a new customer.'}</p>
+        ${TEST5.map((x,i)=>`<div class="card" style="padding:6px 10px"><div style="font-size:15px;font-weight:700">${x}</div><div class="row" style="gap:6px;margin-top:4px">${['Yes','Not yet'].map((l,j)=>`<button class="btn sm ${m.test.checks[i]===j?(j?'red':'teal'):'ghost'}" style="padding:3px 10px;font-size:14px" data-act="testChk" data-i="${i}" data-j="${j}">${m.test.checks[i]===j?'✓ ':''}${l}</button>`).join('')}</div></div>`).join('')}
+        <label for="tcom"><b>Comment</b> <span class="small">"I was unsure at step … because …"</span></label><textarea id="tcom" rows="2">${esc(m.test.comment)}</textarea>
+        <div class="row"><button class="chip" style="font-size:14px" data-act="tcomAll">+ All steps were clear.</button><button class="btn teal sm" data-act="testSave">Save test</button></div>${m.testDone?fbHTML(true,'Test saved. Now revise your guide.'):''}</div></div>`;
+    else if(tb==='rev') body = `<div class="fb info" style="margin-top:0"><span class="ic">i</span><div><b>Test comment:</b> ${esc(m.test.comment||'—')}<br><b>Example:</b> "Put it there." → "Place your phone in the holder." ${listenBtn('Put it there. Change it to: Place your phone in the holder.')}</div></div>
+       <div class="grid2" style="margin-top:10px"><div><div class="kicker">Before</div><textarea rows="11" readonly style="background:#F4F1EA">${esc(draft)}</textarea></div>
+        <div><div class="kicker">After (edit here)</div><textarea id="after" rows="11">${esc(m.after||draft)}</textarea></div></div>
+       <label for="reason"><b>Reason</b> <span class="small">"I changed … because …" or "I kept … because it is already clear."</span></label><textarea id="reason" rows="2">${esc(m.reason)}</textarea>
+       <div class="row" style="margin-top:6px"><button class="btn teal sm" data-act="revSave">Save revision</button>${m.revDone?'<span class="statusline">✓ Revision saved</span>':''}</div>`;
+    else if(tb==='quiz'){ const first=Object.keys(m.quiz.first).filter(k=>m.quiz.first[k]).length, now=QUIZ.filter((q,i)=>m.quiz.now[i]).length;
+      body = `<div class="row"><span class="pill prog">First try: ${first}/6</span><span class="pill done">After fixing: ${now}/6</span><span class="small">Answer, read the explanation, and fix if needed. Quiz scores do not replace the writing rubric.</span></div>
+       <div class="grid2" style="margin-top:10px">${QUIZ.map((q,i)=>`<div class="card" style="padding:10px 12px"><b>${i+1}. ${q.q}</b>${mcHTML('q6_'+i, q.o, {a:q.a, solved:!!m.quiz.now[i], ok:q.e, no:q.o.map(()=>'Read the question again. Use the Handbook if you need help.'), onFirst:x=>{ if(m.quiz.first[i]===undefined) m.quiz.first[i]=x; }, onOk:()=>{ m.quiz.now[i]=true; save(true); rerender(); m6maybe(); }})}</div>`).join('')}</div>`; }
+    else body = `<div class="grid2"><div class="card" style="background:#FFF8EC"><div class="kicker">Your prediction in M0</div><p>${esc(S.m0.pred)||'—'}</p></div>
+        <div class="card"><b>Big question again:</b> How can clear product instructions help customers trust your promotion? <span class="small">(Has your answer changed?)</span><textarea id="r_pred2" rows="2">${esc(m.refl.pred2)}</textarea></div></div>
+       <p class="small" style="margin-top:8px">You may write your reflection in Bahasa Indonesia. Your guide stays in English.</p>
+       <div class="grid3" style="margin-top:6px">${[['q1','What makes instructions useful?'],['q2','Which step did you improve?'],['q3','What will you practise next?']].map(([k,q])=>`<div><label for="r_${k}"><b>${q}</b></label> ${listenBtn(q,'')}<textarea id="r_${k}" rows="4">${esc(m.refl[k])}</textarea></div>`).join('')}</div>
+       <div class="row" style="margin-top:8px"><button class="btn teal sm" data-act="reflSave">Save reflection</button>${m.reflDone?'<span class="statusline">✓ Reflection saved</span>':''}</div>`;
+    const tabs=[{v:'test',l:'1 · Test the guide',done:m.testDone},{v:'rev',l:'2 · Revise',done:m.revDone},{v:'quiz',l:'3 · Quiz (6 cases)',done:QUIZ.every((q,i)=>m.quiz.now[i])},{v:'refl',l:'4 · Reflect',done:m.reflDone}].map(t=>({...t,on:t.v===tb}));
+    return shell({id:'M6', title:'Test Drive & Level Up', tabKey:'m6', tabs, pose:'05_kak_sata_menjelaskan.png', say:'Test your guide, improve it, and think about your learning.', body, foot:backMap,
+      footR: isDone('M6')?`<span class="statusline">✓ Completed · Saved for teacher review</span><button class="btn red" data-act="go" data-to="report">Final Report ➜</button>`:`<span class="small">Parts done: ${tabs.filter(t=>t.done).length}/4</span>`});
+  },
+  after(){ const m=S.m6; const bind=(id,fn)=>{ const el=$('#'+id); if(el) el.addEventListener('input',()=>{ fn(el.value); clearTimeout(saveT); saveT=setTimeout(()=>save(true),700); }); };
+    bind('tcom',v=>m.test.comment=v); bind('after',v=>m.after=v); bind('reason',v=>m.reason=v); ['pred2','q1','q2','q3'].forEach(k=>bind('r_'+k,v=>m.refl[k]=v)); }
+};
+ACT.testWho = t => { S.m6.test.who=t.dataset.v; save(true); rerender(); };
+ACT.testChk = t => { S.m6.test.checks[+t.dataset.i]=+t.dataset.j; save(true); rerender(); };
+ACT.tcomAll = () => { S.m6.test.comment='All steps were clear.'; save(true); rerender(); };
+ACT.testSave = () => { const m=S.m6.test; if(TEST5.some((x,i)=>m.checks[i]===undefined)){ sfx('wrong'); toast('Answer all five checklist items.'); return; }
+  if(m.comment.trim().length<3){ sfx('wrong'); toast('Write a comment, for example: I was unsure at step 3 because …'); return; }
+  S.m6.testDone=true; save(); rerender(); m6maybe(); };
+ACT.revSave = () => { const m=S.m6; if(!m.after) m.after=S.m5.draft; if(words(m.reason)<3){ sfx('wrong'); toast('Write your reason: "I changed … because …" or "I kept … because …".'); return; }
+  m.revDone=true; save(); rerender(); m6maybe(); };
+ACT.reflSave = () => { const r=S.m6.refl; if(['q1','q2','q3'].some(k=>r[k].trim().length<3)){ sfx('wrong'); toast('Answer all three reflection questions.'); return; }
+  S.m6.reflDone=true; save(); rerender(); m6maybe(); };
+
+/* ================= Final report (Scene 26) ================= */
+SCREENS.report = { loc:'Final report',
+  render(){ const xp=totalXP(), all=doneCount()===7; const m6=S.m6; const qf=Object.keys(m6.quiz.first).filter(k=>m6.quiz.first[k]).length, qn=QUIZ.filter((q,i)=>m6.quiz.now[i]).length;
+    return `<div class="bg soft" style="background-image:url(${IMG('03_latar_studio.png')})"></div>
+     ${mentorHTML('06_kak_sata_apresiasi.png', all?'Congratulations! You completed every mission.':'Here is your progress so far.')}
+     <div class="panel main-panel"><div class="panel-h"><h2>Final Report</h2><span class="spacer"></span><span class="pill ${all?'done':'prog'}" style="font-size:16px">${all?'Quest Completed':'In progress'}</span></div>
+      <div class="panel-b"><div class="row" style="align-items:flex-start;flex-wrap:nowrap;gap:18px"><div style="flex:1;min-width:0">
+        <table class="t"><thead><tr><th>Mission</th><th>Status</th><th>XP (once)</th></tr></thead><tbody>
+         ${MISSIONS.map(mm=>{const s=status(mm.id); return `<tr><td><b>${mm.id}</b> ${mm.name}</td><td><span class="pill ${s}">${STATUS_TXT[s]}</span></td><td style="font-variant-numeric:tabular-nums">${missionXP(mm.id)}/${mm.xp}</td></tr>`;}).join('')}
+         <tr><td><b>Total</b></td><td>${doneCount()}/7 missions · ${stamps()}/2 stamps</td><td><b>${xp}/600</b></td></tr></tbody></table>
+        <div class="grid3" style="margin-top:12px">
+         <div class="card"><div class="kicker">Level</div><b>${level(xp)}</b></div>
+         <div class="card"><div class="kicker">Quiz (M6)</div>First try ${qf}/6 · After fixing ${qn}/6</div>
+         <div class="card"><div class="kicker">Assistance used</div>${S.helps} times (no XP lost)</div></div>
+        <div class="card" style="margin-top:12px"><div class="kicker">Your product guide</div><b>${isDone('M6')?'Saved for teacher review':S.m5.saved?'Draft saved · waiting for feedback':'Not written yet'}</b>
+         <p class="small">XP shows your learning process. Your teacher assesses the quality of your procedure text with a rubric (goal, order, language, accuracy and safety, test and revision).</p></div>
+        <div class="row" style="margin-top:12px"><button class="btn red" data-act="workText">Download / copy my work</button><button class="btn ghost" data-act="go" data-to="map">Replay missions</button><button class="btn ghost" data-act="toCover">Back to cover</button></div>
+       </div>${all?`<img class="stampAnim" src="${IMG('16_lencana_selesai.png')}" alt="Quest Completed badge" style="width:210px;flex:none">`:''}</div></div></div>`; },
+  after(){ if(doneCount()===7 && !UI.wonShown){ UI.wonShown=true; setTimeout(()=>{ sfx('win'); confetti(); },300); } }
+};
+function workText(){
+  const L=[], m=S, line='----------------------------------------';
+  L.push('SATAMART PROCEDURE QUEST — MY WORK','Procedure Text for SataMart Product Marketing',`Date: ${new Date().toLocaleString()}`,line);
+  L.push(`XP: ${totalXP()}/600 | Missions: ${doneCount()}/7 | Stamps: ${stamps()}/2 | Level: ${level(totalXP())}`);
+  MISSIONS.forEach(x=>L.push(`${x.id} ${x.name}: ${STATUS_TXT[status(x.id)].replace(/^\S+ /,'')} (${missionXP(x.id)}/${x.xp} XP)`));
+  L.push(line,'M0 PREDICTION:',m.m0.pred||'-','SELF-CHECK: '+KKTP.map((k,i)=>`C${i+1}=${SELF[m.m0.self[i]]||'-'}`).join(', '));
+  L.push(line,'M3 MINI SOP:',...['First,','Next,','Then,','Finally,'].map((w,i)=>m.m3.sop[i]?`${w} ${m.m3.sop[i]}`:'').filter(Boolean),'M3 MK002 explanation: '+(m.m3.mk2.why||'-'));
+  L.push(line,'M5 PLANNER:',...PLAN_F.map(([k,l])=>`${l}: ${m.m5.plan[k]||'-'}`));
+  L.push(line,'M5 DRAFT:',m.m5.draft||'-');
+  L.push(line,'M6 TEST ('+(m.m6.test.who==='friend'?'with a friend':'self-check')+'):',...TEST5.map((x,i)=>`${x} ${m.m6.test.checks[i]===0?'Yes':m.m6.test.checks[i]===1?'Not yet':'-'}`),'Comment: '+(m.m6.test.comment||'-'));
+  L.push(line,'M6 REVISED TEXT:',m.m6.after||m.m5.draft||'-','Reason: '+(m.m6.reason||'-'));
+  const qf=Object.keys(m.m6.quiz.first).filter(k=>m.m6.quiz.first[k]).length, qn=QUIZ.filter((q,i)=>m.m6.quiz.now[i]).length;
+  L.push(line,`M6 QUIZ: first try ${qf}/6, after fixing ${qn}/6`);
+  L.push(line,'REFLECTION:','Big question (now): '+(m.m6.refl.pred2||'-'),'What makes instructions useful? '+(m.m6.refl.q1||'-'),'Which step did you improve? '+(m.m6.refl.q2||'-'),'What will you practise next? '+(m.m6.refl.q3||'-'));
+  L.push(line,'Status: '+(isDone('M6')?'Saved for teacher review':'In progress'),'The writing is assessed by the teacher with the rubric.');
+  return L.join('\n');
+}
+ACT.workText = () => { closeModal(); const txt=workText();
+  modal('My Work', `<p class="small">Submit this to your teacher outside the game (for example, paste it into your class assignment). Nothing is sent online.</p>
+   <textarea id="wt" rows="15" readonly style="margin-top:8px;font-size:15px">${esc(txt)}</textarea><div id="wtfb"></div>`,
+   {foot:`<button class="btn ghost" data-act="closeModal">Close</button><button class="btn navy" data-act="wtCopy">Copy text</button><button class="btn red" data-act="wtDown">Download .txt</button>`}); };
+ACT.wtCopy = () => { const ta=$('#wt'); const done=ok=>{ $('#wtfb').innerHTML=fbHTML(ok?true:null, ok?'Copied. Paste it where your teacher asks.':'Copy is blocked here. The text is selected: press Ctrl+C (or long-press → Copy).'); };
+  try{ navigator.clipboard.writeText(ta.value).then(()=>done(true)).catch(()=>{ ta.focus(); ta.select(); done(false); }); }catch(e){ ta.focus(); ta.select(); done(false); } };
+ACT.wtDown = () => { try{ const b=new Blob([$('#wt').value],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='SataMart_my_work.txt'; document.body.appendChild(a); a.click(); a.remove();
+    $('#wtfb').innerHTML=fbHTML(null,'Download started. If nothing happens, use <b>Copy text</b> instead.'); sfx('save'); }catch(e){ $('#wtfb').innerHTML=fbHTML(false,'Download failed here. Use Copy text.'); } };
+
+/* ================= INIT ================= */
+(function init(){ const had=load(); S.cur='cover'; fit(); rerender(); setTimeout(fit,100);
+  if(had && S.started) setTimeout(()=>toast('Welcome back! Click <b>Continue</b> to keep your progress.'),600); })();
+</script>
+
+</body></html>
